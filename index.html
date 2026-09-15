@@ -1,0 +1,2436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#7c9473" />
+<title>The Cracks App</title>
+<style>
+  :root{
+    /* Sage / cream / terracotta system */
+    --sage:#7c9473;
+    --sage-dark:#5f7857;
+    --sage-light:#eaf0e6;
+    --cream:#faf6ef;
+    --beige:#ecdfcd;
+    --terracotta:#c9805f;
+    --terracotta-dark:#ad6748;
+
+    --bg:var(--cream);
+    --panel:#ffffff;
+    --border:#e6ddce;
+    --text:#31352c;
+    --text-dim:#767c6e;
+    --danger:#b5573f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1e211c;
+      --panel:#272b23;
+      --border:#3a3f33;
+      --text:#eef1e9;
+      --text-dim:#a3aa98;
+      --sage-light:#2c3327;
+      --beige:#3a3225;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1e211c;
+    --panel:#272b23;
+    --border:#3a3f33;
+    --text:#eef1e9;
+    --text-dim:#a3aa98;
+    --sage-light:#2c3327;
+    --beige:#3a3225;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-inline:16px;
+    padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));
+  }
+  h1,h2,h3{font-family:inherit;letter-spacing:-0.01em;}
+  .wrap{max-width:480px;margin:0 auto;padding-block:20px 48px;}
+
+  /* ---- Header ---- */
+  header.app-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:18px;gap:10px;
+  }
+  header.app-header h1{font-size:1.4rem;margin:0;color:var(--sage-dark);}
+  header.app-header h1 .dot{color:var(--terracotta);}
+  .role-badge{
+    display:flex;align-items:center;gap:7px;
+    font:inherit;font-size:0.78rem;font-weight:600;
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+    border-radius:999px;padding:8px 12px;min-height:38px;cursor:pointer;
+  }
+  .role-badge .emoji{font-size:0.95rem;}
+  .role-badge .gear{opacity:0.55;font-size:0.8rem;}
+  .role-badge:active{background:var(--sage-light);}
+
+  /* ---- Onboarding / role-picker overlay ---- */
+  .onboarding-overlay{
+    position:fixed;inset:0;background:var(--bg);z-index:100;
+    display:flex;justify-content:center;
+    padding:20px 20px max(20px, env(safe-area-inset-bottom, 20px));
+    opacity:0;pointer-events:none;transition:opacity .18s;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .onboarding-overlay.open{opacity:1;pointer-events:auto;}
+  .onboarding-card{max-width:420px;width:100%;margin:auto 0;}
+  .onboarding-card .kicker{
+    font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--terracotta-dark);margin-bottom:6px;
+  }
+  .onboarding-card h2{font-size:1.5rem;margin:0 0 8px;}
+  .onboarding-card p{color:var(--text-dim);font-size:0.9rem;line-height:1.5;margin:0 0 24px;}
+  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .role-card{
+    min-height:110px;border-radius:18px;border:2px solid var(--border);
+    background:var(--panel);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    font:inherit;font-size:0.86rem;font-weight:700;color:var(--text);
+    transition:border-color .12s, background .12s;
+  }
+  .role-card .emoji{font-size:1.8rem;}
+  .role-card:active{transform:scale(0.98);}
+  .role-card{position:relative;}
+  .role-card.selected{border-color:var(--sage);background:var(--sage-light);color:var(--sage-dark);}
+  .role-card.selected::after{
+    content:"✓";position:absolute;top:8px;right:10px;
+    font-size:0.85rem;font-weight:800;color:var(--sage-dark);
+  }
+  /* 8 cards fill the 2-col grid evenly — no leftover row to special-case */
+
+  .kids-roster{margin-top:6px;}
+  .kid-add-row{display:flex;gap:6px;margin-top:8px;}
+  .kid-add-row input[type="text"]{
+    flex:1;min-width:0;font:inherit;font-size:0.85rem;padding:10px;
+    border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);
+  }
+  .kid-add-row select{
+    font:inherit;font-size:0.85rem;padding:10px 8px;border-radius:10px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+  }
+  .kid-add-row button{
+    flex-shrink:0;font:inherit;font-size:0.82rem;font-weight:700;padding:10px 12px;
+    border-radius:10px;border:none;background:var(--sage);color:#fff;cursor:pointer;
+  }
+  .kid-row{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:8px 10px;margin-top:6px;font-size:0.85rem;
+  }
+  .kid-row .kid-remove{background:none;border:none;color:var(--text-dim);font-size:1rem;cursor:pointer;padding:0 4px;}
+  .onboarding-cancel{
+    display:block;margin:18px auto 0;background:none;border:none;
+    color:var(--text-dim);font:inherit;font-size:0.82rem;text-decoration:underline;cursor:pointer;
+  }
+  .onboarding-cancel[hidden]{display:none;}
+
+  /* ---- Brain dump input (Feature B) ---- */
+  .braindump{
+    background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    padding:12px;margin-bottom:16px;
+  }
+  .braindump label{
+    display:block;font-size:0.72rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--sage-dark);margin-bottom:8px;
+  }
+  .braindump-row{display:flex;gap:8px;}
+  .braindump input[type="text"]{
+    flex:1;min-width:0;font:inherit;font-size:1rem;padding:13px 14px;
+    border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);
+  }
+  .braindump-row button{
+    flex-shrink:0;min-width:52px;min-height:48px;
+    border-radius:12px;border:none;background:var(--sage);color:#fff;
+    font-size:1.3rem;cursor:pointer;
+  }
+  .braindump-row button:active{background:var(--sage-dark);}
+  .braindump .hint{font-size:0.74rem;color:var(--text-dim);margin-top:8px;}
+  .bulk-toggle{
+    background:none;border:none;color:var(--sage-dark);font:inherit;
+    font-size:0.78rem;font-weight:600;padding:8px 2px 0;cursor:pointer;text-decoration:underline;
+  }
+
+  /* ---- Bulk importer (Feature C) ---- */
+  .bulk-panel{display:none;margin-top:10px;}
+  .bulk-panel.open{display:block;}
+  .bulk-panel textarea{
+    width:100%;min-height:110px;font:inherit;font-size:0.92rem;padding:12px;
+    border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);
+    resize:vertical;
+  }
+  .bulk-panel .row{display:flex;gap:8px;margin-top:8px;}
+  .bulk-panel .row button{flex:1;min-height:44px;}
+
+  /* ---- Crack Picker (Feature A) ---- */
+  .picker-title{font-size:0.98rem;font-weight:700;margin:22px 0 10px;}
+  .picker{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:18px;}
+  @media (min-width:420px){ .picker{grid-template-columns:repeat(3,1fr);} }
+  .crack-btn{
+    min-height:84px;border-radius:18px;border:none;cursor:pointer;
+    background:var(--sage-light);color:var(--sage-dark);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    font:inherit;transition:transform .06s, background .15s;
+  }
+  .crack-btn:active{transform:scale(0.97);}
+  .crack-btn .big{font-size:1.6rem;font-weight:800;}
+  .crack-btn .small{font-size:0.78rem;font-weight:600;}
+  .crack-btn.active{background:var(--sage);color:#fff;}
+  .crack-btn .count{
+    font-size:0.68rem;font-weight:700;background:rgba(0,0,0,0.08);
+    padding:2px 8px;border-radius:999px;margin-top:2px;
+    transition:transform .2s, background .2s;
+  }
+  .crack-btn .count.bump{
+    transform:scale(1.35);
+    background:var(--terracotta);color:#fff;
+  }
+  @keyframes crackPulse{
+    0%{box-shadow:0 0 0 0 rgba(124,148,115,0.55);}
+    100%{box-shadow:0 0 0 14px rgba(124,148,115,0);}
+  }
+  .crack-btn.pulse{animation:crackPulse 0.8s ease-out;}
+
+  /* ---- Category chips (shown inside a bucket when 2+ hats are active) ---- */
+  .category-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .category-row[hidden]{display:none;}
+  .category-chip{
+    font:inherit;font-size:0.78rem;font-weight:700;padding:7px 12px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel);color:var(--text-dim);cursor:pointer;
+  }
+  .category-chip .n{opacity:0.6;font-weight:600;margin-left:2px;}
+  .category-chip.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .category-chip.active .n{opacity:0.85;}
+  .category-chip:disabled{opacity:0.4;cursor:default;}
+
+  /* ---- Task card ---- */
+  .card-area{min-height:40px;}
+  .task-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:18px;
+    padding:20px;margin-bottom:14px;
+  }
+  .task-card .tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .tag{
+    font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding:4px 9px;border-radius:999px;background:var(--beige);color:var(--terracotta-dark);
+  }
+  .tag.energy-low{background:var(--sage-light);color:var(--sage-dark);}
+  .tag.energy-focus{background:#e5e4f2;color:#5850a0;}
+  .tag.energy-social{background:#f7e3e0;color:var(--terracotta-dark);}
+  .tag.energy-admin{background:var(--beige);color:var(--terracotta-dark);}
+  .tag.type-call{background:#e3ecf7;color:#3a5f9e;}
+  .task-card .title{
+    font-size:1.25rem;font-weight:700;line-height:1.3;margin:0 0 4px;
+    outline:none;
+  }
+  .task-card .title[contenteditable="true"]:focus{background:var(--sage-light);border-radius:8px;padding:2px 4px;margin:-2px -4px;}
+  .task-card .meta-line{font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;}
+  .task-card .actions{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    padding-bottom:max(0px, env(safe-area-inset-bottom, 0px));
+  }
+  .task-card .actions button{
+    min-height:50px;border-radius:12px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font:inherit;font-size:0.9rem;font-weight:600;
+    cursor:pointer;
+  }
+  .task-card .actions button.done{background:var(--sage);border-color:var(--sage);color:#fff;grid-column:1 / -1;}
+  .task-card .actions button.call{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+  .task-card .actions button:active{opacity:0.85;}
+
+  /* ---- Timer (per task + persistent running bar) ---- */
+  .timer-row{margin-top:8px;}
+  .timer-row button{
+    width:100%;min-height:46px;border-radius:12px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font:inherit;font-size:0.88rem;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .timer-row button.running{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+  .timer-row button:active{opacity:0.85;}
+  .timer-live{font-variant-numeric:tabular-nums;}
+
+  .timer-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:45;
+    background:var(--terracotta-dark);color:#fff;
+    padding:12px 16px max(12px, env(safe-area-inset-bottom, 0px));
+    display:flex;align-items:center;gap:10px;
+    transform:translateY(100%);transition:transform .2s;
+  }
+  .timer-bar.show{transform:translateY(0);}
+  .timer-bar .dot{
+    width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;
+    animation:timerBlink 1.4s ease-in-out infinite;
+  }
+  @keyframes timerBlink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .timer-bar .info{flex:1;min-width:0;}
+  .timer-bar .info .t-title{font-size:0.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .timer-bar .info .t-time{font-size:0.78rem;opacity:0.85;font-variant-numeric:tabular-nums;}
+  .timer-bar button{
+    flex-shrink:0;background:rgba(255,255,255,0.2);border:none;color:#fff;
+    font:inherit;font-size:0.82rem;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer;
+  }
+  .timer-bar button:active{background:rgba(255,255,255,0.32);}
+
+  /* ---- Time report overlay ---- */
+  .report-overlay{
+    position:fixed;inset:0;background:var(--bg);z-index:90;
+    opacity:0;pointer-events:none;transition:opacity .18s;
+    overflow-y:auto;
+  }
+  .report-overlay.open{opacity:1;pointer-events:auto;}
+  .report-inner{max-width:600px;margin:0 auto;padding:20px 16px max(40px, env(safe-area-inset-bottom, 20px));}
+  .report-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .report-header h2{margin:0;font-size:1.2rem;}
+  .report-close{border:none;background:transparent;font-size:1.4rem;color:var(--text-dim);padding:2px 8px;}
+  .range-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .range-chip{
+    font:inherit;font-size:0.82rem;font-weight:700;padding:8px 14px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel);color:var(--text-dim);cursor:pointer;
+  }
+  .range-chip.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .custom-range{display:none;gap:8px;margin-bottom:14px;align-items:center;}
+  .custom-range.open{display:flex;flex-wrap:wrap;}
+  .custom-range input{
+    font:inherit;font-size:0.85rem;padding:9px 10px;border-radius:10px;
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+  }
+  .report-summary{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;
+  }
+  .stat-tile{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px;}
+  .stat-tile .n{font-size:1.3rem;font-weight:800;color:var(--sage-dark);}
+  .stat-tile .l{font-size:0.72rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .entry-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:16px;}
+  .entry-table th{
+    text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border);
+  }
+  .entry-table td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .entry-table td.num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .export-btn{
+    width:100%;min-height:50px;border-radius:12px;border:none;
+    background:var(--terracotta);color:#fff;font:inherit;font-size:0.95rem;font-weight:700;cursor:pointer;
+  }
+  .export-btn:active{background:var(--terracotta-dark);}
+  .export-hint{font-size:0.74rem;color:var(--text-dim);margin-top:8px;text-align:center;}
+
+  /* ---- Projects: pill on task card, manage overlay, quick-assign prompt ---- */
+  .project-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:999px;
+    background:var(--beige);color:var(--terracotta-dark);border:none;cursor:pointer;
+    margin-bottom:10px;
+  }
+  .project-pill .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .project-pill.unassigned{background:var(--bg);border:1px dashed var(--border);color:var(--text-dim);}
+
+  .projects-overlay, .assign-overlay{
+    position:fixed;inset:0;background:var(--bg);z-index:95;
+    opacity:0;pointer-events:none;transition:opacity .18s;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .projects-overlay.open, .assign-overlay.open{opacity:1;pointer-events:auto;}
+  .projects-inner, .assign-inner{
+    max-width:600px;margin:0 auto;padding:20px 16px max(40px, env(safe-area-inset-bottom, 20px));
+  }
+  .project-row{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:14px;margin-bottom:10px;
+  }
+  .project-row .p-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .project-row .p-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .project-row .p-name{font-weight:700;font-size:1rem;flex:1;min-width:0;}
+  .project-row .p-archive{background:none;border:none;color:var(--text-dim);font-size:0.78rem;cursor:pointer;text-decoration:underline;}
+  .project-row .p-field{margin-bottom:8px;}
+  .project-row .p-field label{display:block;font-size:0.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
+  .project-row input[type="text"], .project-row input[type="number"]{
+    width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font:inherit;font-size:0.86rem;
+  }
+  .color-swatches{display:flex;gap:6px;margin-top:4px;}
+  .color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+  .color-swatch.selected{border-color:var(--text);}
+  .new-project-btn{
+    width:100%;min-height:48px;border-radius:12px;border:1px dashed var(--border);
+    background:transparent;color:var(--sage-dark);font:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;
+    margin-top:4px;
+  }
+
+  .assign-inner .assign-item{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:14px;margin-bottom:12px;
+  }
+  .assign-inner .assign-title{font-weight:700;font-size:0.95rem;margin-bottom:10px;}
+  .assign-chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .assign-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    font:inherit;font-size:0.82rem;font-weight:700;padding:8px 13px;border-radius:999px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;
+  }
+  .assign-chip .dot{width:8px;height:8px;border-radius:50%;}
+  .assign-chip.skip{color:var(--text-dim);border-style:dashed;}
+
+  .empty-state{
+    text-align:center;color:var(--text-dim);padding:36px 16px;
+    border:1px dashed var(--border);border-radius:16px;font-size:0.88rem;
+  }
+
+  /* ---- Full task list ---- */
+  .list-toggle{
+    width:100%;text-align:left;background:none;border:none;color:var(--text-dim);
+    font:inherit;font-size:0.8rem;font-weight:600;padding:10px 2px;cursor:pointer;
+  }
+  .queue-list{display:none;flex-direction:column;gap:8px;margin-bottom:20px;}
+  .queue-list.open{display:flex;}
+  .queue-row{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:10px 12px;font-size:0.86rem;display:flex;justify-content:space-between;
+    align-items:center;gap:8px;cursor:pointer;
+  }
+  .queue-row .qtitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .queue-row .qtags{display:flex;gap:4px;flex-shrink:0;}
+
+  /* ---- Side drawer (Feature D) ---- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(30,25,15,0.4);
+    opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;
+  }
+  .overlay.open{opacity:1;pointer-events:auto;}
+
+  .drawer{
+    position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);
+    background:var(--panel);border-left:1px solid var(--border);
+    box-shadow:-8px 0 24px rgba(0,0,0,0.15);
+    transform:translateX(100%);transition:transform .25s ease;
+    z-index:50;display:flex;flex-direction:column;
+  }
+  .drawer.open{transform:translateX(0);}
+  .drawer-header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:18px 18px 12px;border-bottom:1px solid var(--border);
+  }
+  .drawer-header h2{margin:0;font-size:1.05rem;}
+  .drawer-header .sub{font-size:0.78rem;color:var(--text-dim);margin-top:2px;}
+  .drawer-close{border:none;background:transparent;font-size:1.4rem;line-height:1;padding:2px 8px;color:var(--text-dim);}
+  .drawer-body{padding:18px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;}
+
+  .field label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:6px;color:var(--sage-dark);}
+  .field input[type="text"], .field select{
+    width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font:inherit;font-size:0.92rem;
+  }
+  .field .hint{font-size:0.72rem;color:var(--text-dim);margin-top:5px;}
+  .word-count{font-size:0.72rem;color:var(--text-dim);text-align:right;margin-top:4px;}
+  .word-count.over{color:var(--danger);}
+
+  .script-output{
+    background:var(--sage-light);border-radius:14px;padding:14px;
+    font-size:0.86rem;line-height:1.55;white-space:pre-wrap;
+    border:1px solid var(--border);min-height:120px;outline:none;
+  }
+  .script-meta{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:0.75rem;color:var(--text-dim);
+  }
+  .copy-row{display:flex;flex-direction:column;gap:8px;}
+  .copy-row button{min-height:48px;}
+  .copy-row .primary-copy{
+    background:var(--terracotta);border:none;color:#fff;border-radius:12px;
+    font:inherit;font-size:0.92rem;font-weight:700;cursor:pointer;
+  }
+  .copy-row .secondary-btn{
+    background:none;border:1px solid var(--border);color:var(--text);
+    border-radius:12px;font:inherit;font-size:0.86rem;cursor:pointer;
+  }
+  button.generate-btn{
+    width:100%;min-height:50px;border-radius:12px;border:none;
+    background:var(--sage);color:#fff;font:inherit;font-size:0.95rem;font-weight:700;cursor:pointer;
+  }
+  button.generate-btn:active{background:var(--sage-dark);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--sage-dark);color:#fff;padding:11px 20px;border-radius:999px;
+    font-size:0.85rem;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+    z-index:60;max-width:calc(100vw - 32px);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .toast.action-toast{
+    display:flex;align-items:center;gap:10px;padding:9px 10px 9px 18px;
+    pointer-events:none;
+  }
+  .toast.action-toast.show{pointer-events:auto;}
+  .toast.action-toast span.msg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .toast.action-toast button{
+    flex-shrink:0;background:rgba(255,255,255,0.18);border:none;color:#fff;
+    font:inherit;font-size:0.8rem;font-weight:700;padding:7px 12px;border-radius:999px;
+    cursor:pointer;
+  }
+  .toast.action-toast button:active{background:rgba(255,255,255,0.3);}
+
+  .roadmap{
+    margin-top:32px;padding:14px 16px;border:1px dashed var(--border);border-radius:16px;
+    font-size:0.8rem;color:var(--text-dim);
+  }
+  .roadmap h4{margin:0 0 8px;color:var(--text);font-size:0.85rem;}
+  .roadmap ul{margin:0;padding-left:18px;}
+  .roadmap li{margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-header">
+    <h1>Cracks<span class="dot">.</span></h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="role-badge" id="projectsBtn" aria-label="Manage projects" style="padding:8px 10px;">📁</button>
+      <button class="role-badge" id="reportBtn" aria-label="Time report" style="padding:8px 10px;">📊</button>
+      <button class="role-badge" id="roleBadgeBtn" aria-label="Change role profile">
+        <span class="emoji" id="roleBadgeEmoji">🗂️</span>
+        <span id="roleBadgeLabel">Virtual Assistant</span>
+        <span class="gear">⚙️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Feature B: single-input brain dump -->
+  <div class="braindump">
+    <label for="dumpInput">Drop a thought</label>
+    <div class="braindump-row">
+      <input id="dumpInput" type="text" placeholder="e.g. call dentist to reschedule Tuesday" />
+      <button id="dumpBtn" aria-label="Add task">＋</button>
+    </div>
+    <div class="hint" id="dumpHint">We'll pull the title, guess the time it takes, and tag the energy it needs.</div>
+    <button class="bulk-toggle" id="bulkToggleBtn">Paste a whole list instead →</button>
+
+    <!-- Feature C: bulk list importer -->
+    <div class="bulk-panel" id="bulkPanel">
+      <textarea id="bulkInput" placeholder="Paste a messy paragraph or list — one task per line works best, but full sentences are fine too."></textarea>
+      <div class="row">
+        <button class="generate-btn" id="bulkImportBtn">Import list</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature A: Crack Picker -->
+  <div class="picker-title">I have...</div>
+  <div class="picker" id="picker">
+    <button class="crack-btn" data-bucket="5">
+      <span class="big">5</span><span class="small">mins</span>
+      <span class="count" id="count5">0 queued</span>
+    </button>
+    <button class="crack-btn" data-bucket="15">
+      <span class="big">15</span><span class="small">mins</span>
+      <span class="count" id="count15">0 queued</span>
+    </button>
+    <button class="crack-btn" data-bucket="45">
+      <span class="big">45+</span><span class="small">mins</span>
+      <span class="count" id="count45">0 queued</span>
+    </button>
+  </div>
+
+  <div class="category-row" id="categoryRow" hidden></div>
+
+  <div class="card-area" id="cardArea">
+    <div class="empty-state">Tap a time block above to get your one task.</div>
+  </div>
+
+  <button class="list-toggle" id="listToggleBtn">Show full queue ▾</button>
+  <div class="queue-list" id="queueList"></div>
+
+  <div class="roadmap">
+    <h4>Not in Phase 1 (documented, not built)</h4>
+    <ul>
+      <li>Live email integration</li>
+      <li>Live calendar syncing</li>
+      <li>Multi-user marketplace matching</li>
+    </ul>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-header">
+    <div>
+      <h2>Call Assistant</h2>
+      <div class="sub" id="drawerSub">120-second script, ready to read</div>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close">&times;</button>
+  </div>
+
+  <div class="drawer-body">
+    <div class="field">
+      <label for="goalInput">Call goal (~5 words)</label>
+      <input id="goalInput" type="text" placeholder="e.g. ask supplier for invoice extension" />
+      <div class="word-count" id="wordCount">0 words</div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn">Generate 120-second script</button>
+
+    <div>
+      <div class="script-meta">
+        <span id="scriptLabel">Script</span>
+        <span id="scriptTiming">~0 sec read time</span>
+      </div>
+      <div class="script-output" id="scriptOutput" contenteditable="true" spellcheck="false">Your script will appear here — tap Generate, or edit this directly.</div>
+    </div>
+
+    <div class="copy-row">
+      <button class="primary-copy" id="copyBtn">📋 Copy to clipboard</button>
+      <button class="secondary-btn" id="defaultScriptBtn">Use my default script</button>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+<div class="toast" id="syncToast" style="background:var(--terracotta-dark);">Working offline — changes saved on this device only</div>
+<div class="toast action-toast" id="addToast">
+  <span class="msg" id="addToastMsg"></span>
+  <button id="addToastJump">Show me →</button>
+</div>
+
+<div class="onboarding-overlay" id="onboarding" aria-hidden="true">
+  <div class="onboarding-card">
+    <div class="kicker">Set up once — pick all that apply</div>
+    <h2>What's your world?</h2>
+    <p>Tap every hat you actually wear — most people running a house and a job wear more than one at once. Each one tunes how we guess task length and energy, and they all share one queue. Change this later from the badge in the header.</p>
+    <div class="role-grid" id="roleGrid">
+      <button class="role-card" data-role="toddler_mom"><span class="emoji">👶</span>Toddler Mom</button>
+      <button class="role-card" data-role="homeschool_mom"><span class="emoji">📚</span>Homeschool Mom</button>
+      <button class="role-card" data-role="first_time_mom"><span class="emoji">🍼</span>First-Time Mom</button>
+      <button class="role-card" data-role="custom_sandbox"><span class="emoji">🧩</span>Custom</button>
+      <button class="role-card" data-role="virtual_assistant"><span class="emoji">🗂️</span>Virtual Assistant</button>
+      <button class="role-card" data-role="medical_biller"><span class="emoji">🩺</span>Medical Biller</button>
+      <button class="role-card" data-role="content_creator"><span class="emoji">🎬</span>Content Creator</button>
+      <button class="role-card" data-role="executive"><span class="emoji">💼</span>Executive</button>
+    </div>
+
+    <div class="kids-roster" id="kidsRoster" hidden>
+      <div class="kicker" style="margin-top:16px;">Kids (for homeschool planning)</div>
+      <div id="kidsList"></div>
+      <div class="kid-add-row">
+        <input type="text" id="kidNameInput" placeholder="Child's name" />
+        <select id="kidGradeInput">
+          <option>Pre-K</option><option>K</option>
+          <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option>
+          <option>5th</option><option>6th</option><option>7th</option><option>8th</option>
+          <option>9th</option><option>10th</option><option>11th</option><option>12th</option>
+        </select>
+        <button id="kidAddBtn" type="button">+ Add</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="onboardingDone" style="margin-top:18px;">Done</button>
+    <button class="onboarding-cancel" id="onboardingCancel" hidden>Cancel</button>
+  </div>
+</div>
+
+<div class="timer-bar" id="timerBar">
+  <span class="dot"></span>
+  <div class="info">
+    <div class="t-title" id="timerBarTitle">Task</div>
+    <div class="t-time timer-live" id="timerBarTime">00:00:00</div>
+  </div>
+  <button id="timerBarStop">Stop</button>
+</div>
+
+<div class="report-overlay" id="reportOverlay" aria-hidden="true">
+  <div class="report-inner">
+    <div class="report-header">
+      <h2>Time report</h2>
+      <button class="report-close" id="reportClose" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="range-row" id="rangeRow">
+      <button class="range-chip" data-days="7">Last 7 days</button>
+      <button class="range-chip active" data-days="30">Last 30 days</button>
+      <button class="range-chip" data-days="60">Last 60 days</button>
+      <button class="range-chip" data-days="custom">Custom</button>
+    </div>
+    <div class="custom-range" id="customRange">
+      <input type="date" id="customFrom" />
+      <span style="color:var(--text-dim);font-size:0.82rem;">to</span>
+      <input type="date" id="customTo" />
+    </div>
+
+    <div class="report-summary" id="reportSummary"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="entry-table" id="entryTable">
+        <thead>
+          <tr><th>Date</th><th>Task</th><th>Category</th><th>Project</th><th>Duration</th><th>$</th></tr>
+        </thead>
+        <tbody id="entryTableBody"></tbody>
+      </table>
+    </div>
+
+    <button class="export-btn" id="exportBtn">⬇ Export to Excel</button>
+    <div class="export-hint">Exports the rows currently shown above as an .xlsx file, ready for invoicing.</div>
+  </div>
+</div>
+
+<div class="projects-overlay" id="projectsOverlay" aria-hidden="true">
+  <div class="projects-inner">
+    <div class="report-header">
+      <h2>Projects</h2>
+      <button class="report-close" id="projectsClose" aria-label="Close">&times;</button>
+    </div>
+    <div id="projectsList"></div>
+    <button class="new-project-btn" id="newProjectBtn">+ New project</button>
+  </div>
+</div>
+
+<div class="assign-overlay" id="assignOverlay" aria-hidden="true">
+  <div class="assign-inner">
+    <div class="report-header">
+      <h2>Assign to a project?</h2>
+      <button class="report-close" id="assignClose" aria-label="Close">&times;</button>
+    </div>
+    <div id="assignList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ===========================================================================
+  // Supabase — anonymous auth so there's no login screen, just a persistent
+  // per-device identity. Falls back to localStorage-only if init/network fails.
+  // ===========================================================================
+  const SUPABASE_URL = "https://fleesypesnbguobjkszd.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZWVzeXBlc25iZ3VvYmprc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0Njk5NjMsImV4cCI6MjEwNTA0NTk2M30.pZxTGYuXIjZFDiss4s8H6wOY-GIYA4l8pdwq_L49e1M";
+
+  let supa = null;
+  let userId = null;
+  let remoteReady = false;
+
+  function showSyncToast(){
+    const t = document.getElementById("syncToast");
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  async function initSupabase(){
+    try{
+      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      let { data: { session } } = await supa.auth.getSession();
+      if(!session){
+        const { data, error } = await supa.auth.signInAnonymously();
+        if(error) throw error;
+        session = data.session;
+      }
+      userId = session.user.id;
+      remoteReady = true;
+    }catch(e){
+      console.warn("Supabase unavailable, running local-only:", e);
+      remoteReady = false;
+      showSyncToast();
+    }
+  }
+
+  async function fetchRemoteState(){
+    const result = { roles: null, tasks: [], scriptTemplates: {}, homeschoolKids: null, projects: null };
+    const [{ data: profile }, { data: tasks }, { data: templates }, { data: projects }] = await Promise.all([
+      supa.from("profiles").select("role_type, active_roles, homeschool_kids").eq("id", userId).maybeSingle(),
+      supa.from("tasks").select("*").eq("user_id", userId).eq("status", "open").order("priority").order("created_at"),
+      supa.from("script_templates").select("role_type, body").eq("user_id", userId),
+      supa.from("projects").select("*").eq("user_id", userId).order("created_at")
+    ]);
+    if(profile){
+      // active_roles is the source of truth once the schema patch is applied;
+      // fall back to the single legacy role_type column if it's missing/empty
+      // (e.g. schema patch not run yet, so the column doesn't exist server-side).
+      if(profile.active_roles && profile.active_roles.length) result.roles = profile.active_roles;
+      else if(profile.role_type) result.roles = [profile.role_type];
+      if(profile.homeschool_kids) result.homeschoolKids = profile.homeschool_kids;
+    }
+    if(tasks){
+      result.tasks = tasks.map(t => ({
+        id: t.id, title: t.title, durationBucket: t.duration_bucket,
+        energyType: t.energy_type, taskType: t.task_type, roleTag: t.role_tag || null,
+        projectId: t.project_id || null,
+        status: t.status, priority: t.priority, source: t.source,
+        createdAt: new Date(t.created_at).getTime()
+      }));
+    }
+    if(templates) templates.forEach(row => { result.scriptTemplates[row.role_type] = row.body; });
+    if(projects){
+      result.projects = projects.map(p => ({
+        id: p.id, name: p.name, clientName: p.client_name, color: p.color,
+        rate: p.hourly_rate, keywords: p.keywords || [], archived: p.archived
+      }));
+    }
+    return result;
+  }
+
+  async function remoteInsertTask(task){
+    if(!remoteReady) return;
+    try{
+      await supa.from("tasks").insert({
+        id: task.id, user_id: userId, title: task.title, raw_input: task.raw || null,
+        duration_bucket: task.durationBucket, energy_type: task.energyType,
+        task_type: task.taskType, role_tag: task.roleTag || null,
+        project_id: task.projectId || null,
+        status: task.status, priority: task.priority,
+        source: task.source || "manual"
+      });
+    }catch(e){ console.warn("insert task failed", e); }
+  }
+
+  async function remoteUpdateTask(id, fields){
+    if(!remoteReady) return;
+    try{ await supa.from("tasks").update(fields).eq("id", id).eq("user_id", userId); }
+    catch(e){ console.warn("update task failed", e); }
+  }
+
+  async function remoteSetRoles(roles){
+    if(!remoteReady) return;
+    try{
+      // role_type stays as the "primary" hat for backward-compat script-template
+      // lookups; active_roles carries the full multi-select. Run the schema
+      // patch (active_roles column) once before this will persist correctly.
+      await supa.from("profiles").update({ role_type: roles[0], active_roles: roles }).eq("id", userId);
+    }catch(e){ console.warn("update roles failed", e); }
+  }
+
+  async function remoteSaveHomeschoolKids(kids){
+    if(!remoteReady) return;
+    try{ await supa.from("profiles").update({ homeschool_kids: kids }).eq("id", userId); }
+    catch(e){ console.warn("save homeschool kids failed", e); }
+  }
+
+  async function remoteFetchProjects(){
+    if(!remoteReady) return null;
+    try{
+      const { data, error } = await supa.from("projects").select("*").eq("user_id", userId).order("created_at");
+      if(error) throw error;
+      return data.map(p => ({
+        id: p.id, name: p.name, clientName: p.client_name, color: p.color,
+        rate: p.hourly_rate, keywords: p.keywords || [], archived: p.archived
+      }));
+    }catch(e){ console.warn("fetch projects failed", e); return null; }
+  }
+
+  async function remoteUpsertProject(project){
+    if(!remoteReady) return;
+    try{
+      await supa.from("projects").upsert({
+        id: project.id, user_id: userId, name: project.name, client_name: project.clientName || null,
+        color: project.color, hourly_rate: project.rate || null, keywords: project.keywords || [],
+        archived: !!project.archived
+      });
+    }catch(e){ console.warn("save project failed", e); }
+  }
+
+  async function remoteSetTaskProject(taskId, projectId){
+    if(!remoteReady || !taskId || !UUID_RE.test(taskId)) return;
+    try{ await supa.from("tasks").update({ project_id: projectId }).eq("id", taskId).eq("user_id", userId); }
+    catch(e){ console.warn("set task project failed", e); }
+  }
+
+  async function remoteSaveTemplate(role, body){
+    if(!remoteReady) return;
+    try{
+      await supa.from("script_templates")
+        .upsert({ user_id: userId, role_type: role, body, updated_at: new Date().toISOString() },
+                 { onConflict: "user_id,role_type" });
+    }catch(e){ console.warn("save template failed", e); }
+  }
+
+  async function remoteInsertCallScript(goal, script, targetSeconds, taskId){
+    if(!remoteReady) return;
+    try{
+      await supa.from("call_scripts").insert({
+        user_id: userId, task_id: taskId || null, goal_prompt: goal,
+        script_text: script, target_seconds: targetSeconds
+      });
+    }catch(e){ console.warn("insert call script failed", e); }
+  }
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  async function remoteInsertTimeEntry(entry){
+    if(!remoteReady) return;
+    try{
+      // Local demo/seed tasks use plain ids ("t2") rather than real UUIDs and
+      // were never written to the remote tasks table — task_id is a UUID FK,
+      // so send null instead of erroring the whole insert on those.
+      const taskId = entry.taskId && UUID_RE.test(entry.taskId) ? entry.taskId : null;
+      const projectId = entry.projectId && UUID_RE.test(entry.projectId) ? entry.projectId : null;
+      const { error } = await supa.from("time_entries").insert({
+        id: entry.id, user_id: userId, task_id: taskId, title: entry.title,
+        role_tag: entry.roleTag || null,
+        project_id: projectId, project_name: entry.projectName || null, rate: entry.rate,
+        started_at: new Date(entry.startedAt).toISOString(),
+        ended_at: new Date(entry.endedAt).toISOString(),
+        duration_seconds: entry.durationSeconds
+      });
+      if(error) throw error;
+    }catch(e){ console.warn("insert time entry failed", e); }
+  }
+
+  async function remoteFetchTimeEntries(fromMs, toMs){
+    if(!remoteReady) return null;
+    try{
+      const { data, error } = await supa.from("time_entries")
+        .select("*").eq("user_id", userId)
+        .gte("started_at", new Date(fromMs).toISOString())
+        .lte("started_at", new Date(toMs).toISOString())
+        .order("started_at", { ascending: false });
+      if(error) throw error;
+      return data.map(r => ({
+        id: r.id, taskId: r.task_id, title: r.title, roleTag: r.role_tag,
+        projectId: r.project_id, projectName: r.project_name, rate: r.rate,
+        startedAt: new Date(r.started_at).getTime(), endedAt: new Date(r.ended_at).getTime(),
+        durationSeconds: r.duration_seconds
+      }));
+    }catch(e){ console.warn("fetch time entries failed", e); return null; }
+  }
+
+  // ===========================================================================
+  // State — local cache backed by Supabase when available, localStorage as
+  // both an offline fallback and instant-boot cache.
+  // ===========================================================================
+  const STORAGE_KEY = "cracks_state_v1";
+
+  const DEFAULT_TEMPLATES = {
+    virtual_assistant: "Hi, this is [Your Name]. I have about three minutes, so let me get right to it.\n\nI'm reaching out about [reason for call] — I wanted to handle this directly rather than let it drag out over email.\n\nHere's where things stand: [one or two sentence summary].\n\nWhat I need from you is [specific ask]. Is that something you can do, or is there a blocker I should know about?\n\nI know you're busy, so I won't take more of your time than I need to. Can we agree on [next step / deadline] as the plan?\n\nGreat — I'll follow up in writing so we both have it. Thanks for your time today.",
+    medical_biller: "Hi, this is [Your Name] calling on behalf of [Practice Name] regarding claim [claim number].\n\nI'm following up on [reason for call — denial, missing info, resubmission].\n\nCan you confirm the current status, and what's needed from our end to move it forward?\n\nI'll note that on the account and follow up in writing so we have a record on both sides. Thank you for your time.",
+    content_creator: "Hi, it's [Your Name] — thanks for hopping on.\n\nI'm calling about [reason — collab, deliverable, usage rights].\n\nHere's what I'm thinking: [one-sentence pitch or ask].\n\nDoes that work on your end, or is there something you'd want adjusted?\n\nI'll send a quick recap by email so it's all in writing. Appreciate you making time.",
+    executive: "Hi, [Your Name] here. I have a hard stop shortly, so I'll be brief.\n\nCalling regarding [reason for call].\n\nBottom line: [the ask or decision needed].\n\nCan we align on [next step] before I go?\n\nI'll circulate a short recap after this call. Thanks for your time.",
+    toddler_mom: "Hi, this is [Your Name]. I've got about two minutes before my toddler notices I've disappeared, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.",
+    homeschool_mom: "Hi, this is [Your Name]. I'm between lessons, so I only have a few minutes.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — is that something you can help with?\n\nFeel free to reach me back at [best way to reach you]. Thank you!",
+    first_time_mom: "Hi, this is [Your Name]. I only have a couple minutes before the baby needs me, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.",
+    custom_sandbox: "Hi, this is [Your Name]. I have a couple minutes, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nThanks so much for your time."
+  };
+
+  const defaultState = {
+    roles: ["virtual_assistant"],
+    onboarded: false,
+    tasks: [
+      { id: "t1", title: "Call insurance re: claim #4471", durationBucket: "15", energyType: "social", taskType: "call", roleTag: "medical_biller", status: "open", priority: 1, createdAt: Date.now() - 100000 },
+      { id: "t2", title: "Reply to 3 client emails", durationBucket: "5", energyType: "admin", taskType: "email", roleTag: null, status: "open", priority: 2, createdAt: Date.now() - 90000 },
+      { id: "t3", title: "Draft next week's content outline", durationBucket: "45", energyType: "focus", taskType: "general", roleTag: "content_creator", status: "open", priority: 2, createdAt: Date.now() - 80000 },
+      { id: "t4", title: "File this week's receipts", durationBucket: "5", energyType: "low", taskType: "general", roleTag: null, status: "open", priority: 3, createdAt: Date.now() - 70000 }
+    ],
+    scriptTemplates: Object.assign({}, DEFAULT_TEMPLATES),
+    shownTaskByBucket: {},
+    timeEntries: [],
+    activeTimer: null,
+    homeschoolKids: [],
+    projects: []
+  };
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        parsed.scriptTemplates = Object.assign({}, DEFAULT_TEMPLATES, parsed.scriptTemplates || {});
+        // Migration: single "role" string becomes a "roles" array (multi-hat).
+        if(!parsed.roles){
+          parsed.roles = parsed.role ? [parsed.role] : ["virtual_assistant"];
+        }
+        // Migration: anyone with existing saved state already "chose" a role implicitly.
+        if(typeof parsed.onboarded === "undefined") parsed.onboarded = true;
+        if(!parsed.timeEntries) parsed.timeEntries = [];
+        if(typeof parsed.activeTimer === "undefined") parsed.activeTimer = null;
+        if(!parsed.homeschoolKids) parsed.homeschoolKids = [];
+        if(!parsed.projects) parsed.projects = [];
+        // Migration: "mom_home" no longer exists as a selectable hat — anyone
+        // who had it drops back to just their other hats (or the default).
+        parsed.roles = parsed.roles.filter(r => r !== "mom_home");
+        if(!parsed.roles.length) parsed.roles = ["virtual_assistant"];
+        return parsed;
+      }
+    }catch(e){}
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+  function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+
+  let state = loadState();
+  let activeBucket = null;
+  let activeCategory = "all";
+
+  // ===========================================================================
+  // Feature B/C: heuristic parser — turns raw text into a tagged task
+  // ===========================================================================
+  const CALL_WORDS = /\b(call|phone|dial|ring up|voicemail)\b/i;
+  const EMAIL_WORDS = /\b(email|inbox|reply to|follow up on email)\b/i;
+  const SOCIAL_WORDS = /\b(call|text|message|meeting|meet with|check in with)\b/i;
+  const FOCUS_WORDS = /\b(write|draft|design|plan|strategy|outline|build|create|record|edit|brainstorm)\b/i;
+  const LOW_WORDS = /\b(file|sort|clean|tidy|organize|scan|print|order|restock|label)\b/i;
+  const LONG_HINT = /\b(45|hour|deep|strategy|plan|project|redesign)\b/i;
+  const SHORT_HINT = /\b(5 min|five min|quick|real quick|just a sec|one min)\b/i;
+  const MED_HINT = /\b(15 min|fifteen min)\b/i;
+
+  // Role-specific vocabulary: same word can mean very different time/energy
+  // depending on the job. "Credentialing" for a Medical Biller is a multi-day
+  // paperwork slog (45+, focus) — generically it'd fall through to 15/admin.
+  // "social" entries are calls/live conversations — matching one flips the
+  // task to type "call" so it auto-opens the script drawer, regardless of bucket.
+  const ROLE_TASK_HINTS = {
+    virtual_assistant: {
+      long: { energy: "focus", words: [
+        "onboard new client", "draft intake form", "clean up database", "reconcile travel expense",
+        "research software vendor", "build spreadsheet from scratch", "standard operating procedure",
+        "write sop document", "audit client calendar", "migrate files to drive",
+        "format multi page report", "build landing page", "set up email sequence",
+        "map out client journey", "compile competitor research", "vma software training",
+        "organize loose receipts", "clean out cloud storage", "draft multi slide presentation",
+        "travel booking", "itinerary", "inbox zero", "vendor research", "vendor comparison",
+        "process documentation", "new client onboarding", "system setup", "research options",
+        "compile report", "clean up the crm", "database cleanup"
+      ]},
+      short: { energy: "low", words: [
+        "check slack", "dm client", "send invoice link", "download pdf", "forward email",
+        "clear inbox notifications", "archive old task", "unmute chat", "pin message",
+        "bookmark listing", "share folder access", "accept calendar invite", "quick text reminder",
+        "log out of portal", "mute notifications",
+        "confirm appointment", "forward the email", "update the calendar",
+        "update calendar", "send a reminder", "file the receipt", "file receipts", "data entry"
+      ]},
+      social: { energy: "social", words: [
+        "call patient back", "deescalate client dispute", "negotiate monthly retainer",
+        "live intake interview", "vendor discovery phone call"
+      ]}
+    },
+    medical_biller: {
+      long: { energy: "admin", words: [
+        "process prior authorization", "audit practice fusion ledger", "submit institutional claim",
+        "reconcile electronic remittance", "appeal denied claim", "run cost segregation study",
+        "work on aging accounts receivable", "icd 10 coding audit", "verify eligibility for new patients",
+        "correct clearinghouse errors", "cross reference hipaa authorization", "manually enter superblocks",
+        "medicare compliance report", "post insurance check manually", "investigate balance billing dispute",
+        "hcfa 1500 layout correction", "batch submit mental health claims", "unravel clearinghouse rejection loop",
+        "credentialing", "prior authorization", "prior auth", "insurance appeal", "claim appeal",
+        "claim resubmission", "eob reconciliation", "payer enrollment", "provider enrollment",
+        "compliance audit", "denial review", "chart audit", "credential renewal", "re-credentialing"
+      ]},
+      short: { energy: "low", words: [
+        "check clearinghouse dashboard", "print single claim", "refresh simplepractice ledger",
+        "download era file", "verify copay amount", "look up modifier code", "fax authorization page",
+        "update patient phone number", "mark claim as paid", "flag duplicate submission",
+        "view billing statement", "open simplepractice dashboard", "check secure inbox",
+        "verify eligibility", "check claim status", "post a payment", "post payment",
+        "log a call", "update patient info", "check on claim"
+      ]},
+      social: { energy: "social", words: [
+        "call insurance representative", "phone medicare help desk", "negotiate payment plan with patient",
+        "live authorization hotline queue", "call provider regarding ledger gap"
+      ]}
+    },
+    content_creator: {
+      long: { energy: "focus", words: [
+        "script next 5 reels", "edit video file with hooks", "record full masterclass lesson",
+        "build lead magnet freebie", "write long form sales copy", "design canva template bundle",
+        "map out 30 day content calendar", "batch record story frameworks", "write high converting newsletter",
+        "design aesthetic landing pages", "compile market research hooks", "edit capcut video tracks",
+        "structure digital product store", "write automated welcome sequence", "audit social media analytics data",
+        "film the video", "shoot content", "edit the video", "video edit", "batch content",
+        "write the script", "storyboard", "photo shoot", "record the podcast", "edit photos",
+        "content calendar", "brand deal negotiation"
+      ]},
+      short: { energy: "low", words: [
+        "post single story", "reply to grid comments", "change bio link url", "check beacon analytics",
+        "upload reel draft", "save trending audio", "screenshot positive review", "update store price tag",
+        "pin top comment", "tag brand partner", "clear direct messages", "share post to stories",
+        "check manychat notification",
+        "schedule the post", "schedule post", "write a caption", "reply to comments",
+        "approve the post", "post to instagram", "post to tiktok"
+      ]},
+      social: { energy: "social", words: [
+        "live stream layout check", "brand collaboration phone pitch", "interview student for case study",
+        "podcast guest soundcheck call", "negotiate affiliate contract rates"
+      ]}
+    },
+    executive: {
+      long: { energy: "focus", words: [
+        "draft corporate board brief", "reconcile quarterly ledger statements", "plan cross country travel logistics",
+        "structure departmental budget sheets", "review master service agreement", "conduct vendor vetting comparison",
+        "write executive summary brief", "filter through complex legal contract", "build project tracking database",
+        "map out standard operating matrix", "compile operations scaling report", "audit team performance indicators",
+        "reorganize private corporate drive",
+        "board deck", "quarterly review", "budget planning", "org restructure", "strategic plan",
+        "performance review", "annual report", "hiring plan", "due diligence", "contract negotiation"
+      ]},
+      short: { energy: "admin", words: [
+        "clear corporate calendar holds", "forward priority email", "approve pending expense report",
+        "send quick teams update", "check slack alerts", "archive resolved support thread",
+        "update shared zoom link", "download meeting transcription file", "send digital signing link",
+        "star high priority message", "mute non essential channel", "accept boardroom invite",
+        "approve the expense", "approve expense", "sign the document", "sign document",
+        "quick check-in", "review the agenda", "review agenda"
+      ]},
+      social: { energy: "social", words: [
+        "call difficult client directly", "phone interview candidate screening", "negotiate software service terms",
+        "deescalate department internal conflict", "brief operations head via call"
+      ]}
+    },
+    homeschool_mom: {
+      long: { energy: "focus", words: [
+        "plan weekly homeschool lesson", "grade curriculum worksheets", "organize co op portfolio documentation",
+        "order next semester books", "research field trip logistics", "audit state compliance logs",
+        "prepare science experiment supplies", "sort physical educational materials",
+        "plan homeschool curriculum", "research homeschool curriculum", "prep homeschool lesson plans",
+        "write lesson plans", "plan field trip", "research curriculum", "sort school paperwork"
+      ]},
+      short: { energy: "low", words: [
+        "print daily math worksheet", "check co op group chat", "bookmark unit study link",
+        "mark lesson box as done", "download digital reading log", "sharpen learning pencils",
+        "clear homeschool table space", "pack lunches", "sign school form", "reply to teacher email",
+        "check school portal", "print homework sheet", "sign permission slip", "check homework folder",
+        "label school supplies"
+      ]},
+      social: { energy: "social", words: [
+        "phone homeschool board coordinator", "call co op testing center", "interview local curriculum tutor",
+        "call the school about absence", "talk to teacher about concern", "call about school enrollment"
+      ]}
+    },
+    toddler_mom: {
+      long: { energy: "focus", words: [
+        "rotate toy bins systematically", "bleach and sanitize play area", "research preschool enrollment rules",
+        "order next size up seasonal wardrobe", "organize bedroom closet clutter", "plan toddler birthday logistics",
+        "organize kids closet", "deep clean the kitchen", "plan birthday party", "sort through outgrown clothes",
+        "organize the playroom", "deep clean bedrooms"
+      ]},
+      short: { energy: "low", words: [
+        "wipe down high chair tray", "add pull ups to target cart", "toss single load into laundry",
+        "hide broken plastic toy", "grab stray snack cups", "check monitor battery status",
+        "order emergency apple juice refill", "restock diaper bag", "text the sitter", "pick a dinner",
+        "decide what's for dinner", "figure out dinner", "what's for dinner", "confirm playdate",
+        "pack the diaper bag", "refill the pillbox", "restock snacks"
+      ]},
+      social: { energy: "social", words: [
+        "call pediatrician regarding milestones", "phone daycare waitlist coordinator", "call speech therapist scheduler",
+        "negotiate schedule with co-parent", "call daycare about pickup change", "call the dentist for kids"
+      ]}
+    },
+    first_time_mom: {
+      long: { energy: "focus", words: [
+        "research infant sleep training methods", "process baby registry return items", "file newborn insurance enrollment forms",
+        "sanitize breast pump parts batch", "organize nursery dresser inventory", "read infant development milestones guide",
+        "research pediatrician", "file kids medical paperwork", "plan family vacation"
+      ]},
+      short: { energy: "low", words: [
+        "track diaper change in app", "order diaper pail refills", "check baby monitor angle",
+        "add burp cloths to cart", "text lactation consult quick question", "download white noise audio loop",
+        "sip room temperature coffee"
+      ]},
+      social: { energy: "social", words: [
+        "call lactation consultant office", "phone advice nurse hotline", "call postpartum follow up coordinator",
+        "call the pediatrician"
+      ]}
+    },
+    custom_sandbox: {
+      long: { energy: "focus", words: [
+        "custom project planning", "deep focus administrative task", "large household organization block",
+        "financial budget auditing step"
+      ]},
+      short: { energy: "low", words: [
+        "quick digital clear out", "one hand status update", "fast utility payment", "household text reply"
+      ]},
+      social: { energy: "social", words: [
+        "custom client phone call negotiation", "emergency support hotline query", "personal schedule reconciliation call"
+      ]}
+    }
+  };
+
+  function matchRoleHint(lowerText, roles){
+    if(!roles || !roles.length) return null;
+    const groups = [
+      { key: "long", durationBucket: "45" },
+      { key: "social", durationBucket: "15" },
+      { key: "short", durationBucket: "5" }
+    ];
+    for(const role of roles){
+      const hints = ROLE_TASK_HINTS[role];
+      if(!hints) continue;
+      for(const g of groups){
+        const bucket = hints[g.key];
+        if(!bucket) continue;
+        const word = bucket.words.find(w => lowerText.includes(w));
+        if(word){
+          return {
+            durationBucket: g.durationBucket,
+            energyType: bucket.energy,
+            taskType: g.key === "social" ? "call" : null,
+            roleKey: role,
+            matchedWord: word
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  function parseTaskLine(raw, roles){
+    const text = raw.trim();
+    if(!text) return null;
+    const lower = text.toLowerCase();
+
+    let taskType = "general";
+    if(CALL_WORDS.test(text)) taskType = "call";
+    else if(EMAIL_WORDS.test(text)) taskType = "email";
+
+    // Explicit time mentions always win on DURATION ("5 min" beats any keyword
+    // guess), but a role "social" match (a call/negotiation) always flips
+    // taskType to "call" so the script drawer still triggers either way.
+    let durationBucket = null;
+    if(SHORT_HINT.test(text)) durationBucket = "5";
+    else if(MED_HINT.test(text)) durationBucket = "15";
+    else if(LONG_HINT.test(text)) durationBucket = "45";
+
+    let energyType = null;
+    let roleTagged = false;
+    let roleKey = null;
+
+    const roleHint = matchRoleHint(lower, roles);
+    if(roleHint){
+      roleTagged = true;
+      roleKey = roleHint.roleKey;
+      if(roleHint.taskType) taskType = roleHint.taskType;
+      if(!durationBucket) durationBucket = roleHint.durationBucket;
+      energyType = roleHint.energyType;
+    }
+
+    if(!energyType){
+      if(FOCUS_WORDS.test(text)) energyType = "focus";
+      else if(SOCIAL_WORDS.test(text)) energyType = "social";
+      else if(LOW_WORDS.test(text)) energyType = "low";
+      else energyType = "admin";
+    }
+
+    if(!durationBucket){
+      durationBucket = "15";
+      if(taskType === "email" || energyType === "low") durationBucket = "5";
+      else if(energyType === "focus") durationBucket = "45";
+    }
+
+    const title = cleanTitle(text);
+    return { taskType, energyType, durationBucket, title, raw: text, roleTagged, roleKey };
+  }
+
+  function cleanTitle(text){
+    let t = text.replace(/^(so|okay|ok|also|and|then|i need to|i should|i have to|gotta|need to|remember to)\s+/i, "");
+    t = t.replace(/\s+/g, " ").trim();
+    t = t.replace(/[.]+$/, "");
+    if(t.length) t = t[0].toUpperCase() + t.slice(1);
+    return t.length > 90 ? t.slice(0, 90) + "…" : t;
+  }
+
+  // Auto-assign a project by matching its keywords against the task text.
+  // "Best match wins" = longest keyword, so a specific client name doesn't
+  // lose to a shorter, more generic keyword on another project.
+  function matchProject(lowerText, projects){
+    let best = null;
+    (projects || []).filter(p => !p.archived).forEach(p => {
+      (p.keywords || []).forEach(kw => {
+        const k = kw.trim().toLowerCase();
+        if(k && lowerText.includes(k) && (!best || k.length > best.keyword.length)){
+          best = { projectId: p.id, keyword: k };
+        }
+      });
+    });
+    return best;
+  }
+
+  function addTask(parsed, source){
+    const projectMatch = matchProject((parsed.raw || parsed.title).toLowerCase(), state.projects);
+    const task = {
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "t" + Date.now() + Math.random().toString(36).slice(2, 6),
+      title: parsed.title,
+      raw: parsed.raw,
+      durationBucket: parsed.durationBucket,
+      energyType: parsed.energyType,
+      taskType: parsed.taskType,
+      roleTag: parsed.roleKey || null,
+      projectId: projectMatch ? projectMatch.projectId : null,
+      status: "open",
+      priority: 2,
+      source,
+      createdAt: Date.now()
+    };
+    state.tasks.push(task);
+    remoteInsertTask(task);
+    return task;
+  }
+
+  // ===========================================================================
+  // Assign-to-project prompt: fires right after adding a task (or a bulk batch)
+  // when no project keyword matched and at least one active project exists.
+  // ===========================================================================
+  const assignOverlay = document.getElementById("assignOverlay");
+  const assignList = document.getElementById("assignList");
+
+  function maybePromptProjectAssign(tasks, force){
+    const activeProjects = state.projects.filter(p => !p.archived);
+    if(!activeProjects.length){
+      if(force) openProjectsOverlay(); // nothing to assign to yet — send them to create one
+      return;
+    }
+    const unassigned = force ? tasks : tasks.filter(t => !t.projectId);
+    if(!unassigned.length) return;
+
+    assignList.innerHTML = "";
+    unassigned.forEach(task => {
+      const item = document.createElement("div");
+      item.className = "assign-item";
+      const title = document.createElement("div");
+      title.className = "assign-title";
+      title.textContent = task.title;
+      const chipRow = document.createElement("div");
+      chipRow.className = "assign-chip-row";
+
+      activeProjects.forEach(p => {
+        const chip = document.createElement("button");
+        chip.className = "assign-chip";
+        chip.innerHTML = `<span class="dot" style="background:${p.color}"></span>${escapeHtml(p.name)}`;
+        chip.addEventListener("click", () => {
+          task.projectId = p.id;
+          saveState();
+          remoteSetTaskProject(task.id, p.id);
+          renderCard();
+          renderQueueList();
+          item.remove();
+          if(!assignList.children.length) closeAssignOverlay();
+        });
+        chipRow.appendChild(chip);
+      });
+
+      const skipChip = document.createElement("button");
+      skipChip.className = "assign-chip skip";
+      skipChip.textContent = "Skip";
+      skipChip.addEventListener("click", () => {
+        item.remove();
+        if(!assignList.children.length) closeAssignOverlay();
+      });
+      chipRow.appendChild(skipChip);
+
+      item.append(title, chipRow);
+      assignList.appendChild(item);
+    });
+
+    assignOverlay.classList.add("open");
+    assignOverlay.setAttribute("aria-hidden", "false");
+  }
+  function closeAssignOverlay(){
+    assignOverlay.classList.remove("open");
+    assignOverlay.setAttribute("aria-hidden", "true");
+  }
+  document.getElementById("assignClose").addEventListener("click", closeAssignOverlay);
+
+  // ===========================================================================
+  // Manage Projects: add/edit/archive. Each has a name, optional client name,
+  // color, optional hourly rate (for $ on the invoicing export), and keyword
+  // aliases that drive auto-assignment when a new task is added.
+  // ===========================================================================
+  const PROJECT_COLORS = ["#7c9473", "#c9805f", "#5f7bb0", "#8a6fb0", "#c96f96", "#b09150"];
+  const projectsOverlay = document.getElementById("projectsOverlay");
+  const projectsList = document.getElementById("projectsList");
+
+  function openProjectsOverlay(){
+    renderProjectsList();
+    projectsOverlay.classList.add("open");
+    projectsOverlay.setAttribute("aria-hidden", "false");
+  }
+  function closeProjectsOverlay(){
+    projectsOverlay.classList.remove("open");
+    projectsOverlay.setAttribute("aria-hidden", "true");
+  }
+  document.getElementById("projectsBtn").addEventListener("click", openProjectsOverlay);
+  document.getElementById("projectsClose").addEventListener("click", closeProjectsOverlay);
+
+  function saveProject(project){
+    saveState();
+    remoteUpsertProject(project);
+  }
+
+  function renderProjectsList(){
+    projectsList.innerHTML = "";
+    const visible = state.projects.filter(p => !p.archived);
+    if(!visible.length){
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "No projects yet — add one below to start auto-tagging client tasks.";
+      projectsList.appendChild(empty);
+    }
+    visible.forEach(project => projectsList.appendChild(buildProjectRow(project)));
+  }
+
+  function buildProjectRow(project){
+    const row = document.createElement("div");
+    row.className = "project-row";
+
+    const head = document.createElement("div");
+    head.className = "p-head";
+    const dot = document.createElement("span");
+    dot.className = "p-dot";
+    dot.style.background = project.color;
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "p-name";
+    nameInput.value = project.name;
+    nameInput.placeholder = "Project name";
+    nameInput.addEventListener("blur", () => {
+      project.name = nameInput.value.trim() || project.name;
+      saveProject(project);
+      renderCard();
+    });
+    const archiveBtn = document.createElement("button");
+    archiveBtn.className = "p-archive";
+    archiveBtn.textContent = "Archive";
+    archiveBtn.addEventListener("click", () => {
+      project.archived = true;
+      saveProject(project);
+      renderProjectsList();
+    });
+    head.append(dot, nameInput, archiveBtn);
+
+    const clientField = document.createElement("div");
+    clientField.className = "p-field";
+    clientField.innerHTML = `<label>Client (optional)</label>`;
+    const clientInput = document.createElement("input");
+    clientInput.type = "text";
+    clientInput.value = project.clientName || "";
+    clientInput.placeholder = "e.g. Dr. Smith's Office";
+    clientInput.addEventListener("blur", () => {
+      project.clientName = clientInput.value.trim();
+      saveProject(project);
+    });
+    clientField.appendChild(clientInput);
+
+    const rateField = document.createElement("div");
+    rateField.className = "p-field";
+    rateField.innerHTML = `<label>Hourly rate (optional)</label>`;
+    const rateInput = document.createElement("input");
+    rateInput.type = "number";
+    rateInput.step = "0.01";
+    rateInput.min = "0";
+    rateInput.value = project.rate != null ? project.rate : "";
+    rateInput.placeholder = "e.g. 35";
+    rateInput.addEventListener("blur", () => {
+      const v = parseFloat(rateInput.value);
+      project.rate = isNaN(v) ? null : v;
+      saveProject(project);
+    });
+    rateField.appendChild(rateInput);
+
+    const kwField = document.createElement("div");
+    kwField.className = "p-field";
+    kwField.innerHTML = `<label>Auto-tag keywords (comma separated)</label>`;
+    const kwInput = document.createElement("input");
+    kwInput.type = "text";
+    kwInput.value = (project.keywords || []).join(", ");
+    kwInput.placeholder = "e.g. dr smith, smith office, dental billing";
+    kwInput.addEventListener("blur", () => {
+      project.keywords = kwInput.value.split(",").map(k => k.trim()).filter(Boolean);
+      saveProject(project);
+    });
+    kwField.appendChild(kwInput);
+
+    const colorField = document.createElement("div");
+    colorField.className = "p-field";
+    colorField.innerHTML = `<label>Color</label>`;
+    const swatches = document.createElement("div");
+    swatches.className = "color-swatches";
+    PROJECT_COLORS.forEach(c => {
+      const sw = document.createElement("button");
+      sw.type = "button";
+      sw.className = "color-swatch" + (project.color === c ? " selected" : "");
+      sw.style.background = c;
+      sw.addEventListener("click", () => {
+        project.color = c;
+        saveProject(project);
+        renderProjectsList();
+        renderCard();
+      });
+      swatches.appendChild(sw);
+    });
+    colorField.appendChild(swatches);
+
+    row.append(head, clientField, rateField, kwField, colorField);
+    return row;
+  }
+
+  document.getElementById("newProjectBtn").addEventListener("click", () => {
+    const project = {
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "proj" + Date.now(),
+      name: "New project",
+      clientName: "",
+      color: PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length],
+      rate: null,
+      keywords: [],
+      archived: false
+    };
+    state.projects.push(project);
+    saveProject(project);
+    renderProjectsList();
+  });
+
+  // ===========================================================================
+  // Rendering
+  // ===========================================================================
+  const roleBadgeBtn = document.getElementById("roleBadgeBtn");
+  const roleBadgeLabel = document.getElementById("roleBadgeLabel");
+  const roleBadgeEmoji = document.getElementById("roleBadgeEmoji");
+  const onboardingEl = document.getElementById("onboarding");
+  const roleGrid = document.getElementById("roleGrid");
+  const onboardingCancel = document.getElementById("onboardingCancel");
+  const dumpInput = document.getElementById("dumpInput");
+  const dumpBtn = document.getElementById("dumpBtn");
+  const dumpHint = document.getElementById("dumpHint");
+  const bulkToggleBtn = document.getElementById("bulkToggleBtn");
+  const bulkPanel = document.getElementById("bulkPanel");
+  const bulkInput = document.getElementById("bulkInput");
+  const bulkImportBtn = document.getElementById("bulkImportBtn");
+  const picker = document.getElementById("picker");
+  const cardArea = document.getElementById("cardArea");
+  const listToggleBtn = document.getElementById("listToggleBtn");
+  const queueList = document.getElementById("queueList");
+
+  const ROLE_META = {
+    toddler_mom: { label: "Toddler Mom", emoji: "👶" },
+    homeschool_mom: { label: "Homeschool Mom", emoji: "📚" },
+    first_time_mom: { label: "First-Time Mom", emoji: "🍼" },
+    custom_sandbox: { label: "Custom", emoji: "🧩" },
+    virtual_assistant: { label: "Virtual Assistant", emoji: "🗂️" },
+    medical_biller: { label: "Medical Biller", emoji: "🩺" },
+    content_creator: { label: "Content Creator", emoji: "🎬" },
+    executive: { label: "Executive", emoji: "💼" }
+  };
+
+  function updateRoleBadge(){
+    const roles = state.roles && state.roles.length ? state.roles : ["virtual_assistant"];
+    const metas = roles.map(r => ROLE_META[r]).filter(Boolean);
+    roleBadgeEmoji.textContent = metas.map(m => m.emoji).join("");
+    roleBadgeLabel.textContent = metas.length <= 2
+      ? metas.map(m => m.label).join(" + ")
+      : `${metas.length} profiles`;
+  }
+
+  const kidsRoster = document.getElementById("kidsRoster");
+  const kidsList = document.getElementById("kidsList");
+  const kidNameInput = document.getElementById("kidNameInput");
+  const kidGradeInput = document.getElementById("kidGradeInput");
+
+  function updateKidsRosterVisibility(){
+    const homeschoolSelected = roleGrid.querySelector('.role-card[data-role="homeschool_mom"]').classList.contains("selected");
+    kidsRoster.hidden = !homeschoolSelected;
+  }
+
+  function renderKidsList(){
+    kidsList.innerHTML = "";
+    (state.homeschoolKids || []).forEach(kid => {
+      const row = document.createElement("div");
+      row.className = "kid-row";
+      row.innerHTML = `<span>${escapeHtml(kid.name)} — ${escapeHtml(kid.grade)}</span>`;
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "kid-remove";
+      removeBtn.textContent = "✕";
+      removeBtn.addEventListener("click", () => {
+        state.homeschoolKids = state.homeschoolKids.filter(k => k.id !== kid.id);
+        saveState();
+        remoteSaveHomeschoolKids(state.homeschoolKids);
+        renderKidsList();
+      });
+      row.appendChild(removeBtn);
+      kidsList.appendChild(row);
+    });
+  }
+
+  document.getElementById("kidAddBtn").addEventListener("click", () => {
+    const name = kidNameInput.value.trim();
+    if(!name) return;
+    if(!state.homeschoolKids) state.homeschoolKids = [];
+    state.homeschoolKids.push({
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "kid" + Date.now(),
+      name, grade: kidGradeInput.value
+    });
+    saveState();
+    remoteSaveHomeschoolKids(state.homeschoolKids);
+    kidNameInput.value = "";
+    renderKidsList();
+  });
+
+  function showOnboarding(isChange){
+    const current = new Set(state.roles || []);
+    roleGrid.querySelectorAll(".role-card").forEach(c => {
+      c.classList.toggle("selected", current.has(c.dataset.role));
+    });
+    onboardingCancel.hidden = !isChange;
+    onboardingEl.classList.add("open");
+    onboardingEl.setAttribute("aria-hidden", "false");
+    updateKidsRosterVisibility();
+    renderKidsList();
+  }
+  function hideOnboarding(){
+    onboardingEl.classList.remove("open");
+    onboardingEl.setAttribute("aria-hidden", "true");
+  }
+
+  // Cards just toggle selected — nothing commits until Done is tapped, so
+  // picking several hats in a row doesn't flash-close the overlay each time.
+  roleGrid.addEventListener("click", (e) => {
+    const card = e.target.closest(".role-card");
+    if(!card) return;
+    card.classList.toggle("selected");
+    updateKidsRosterVisibility();
+  });
+
+  document.getElementById("onboardingDone").addEventListener("click", () => {
+    const chosen = [...roleGrid.querySelectorAll(".role-card.selected")].map(c => c.dataset.role);
+    if(chosen.length === 0) return; // at least one hat required
+    state.roles = chosen;
+    state.onboarded = true;
+    saveState();
+    remoteSetRoles(state.roles);
+    updateRoleBadge();
+    hideOnboarding();
+    activeCategory = "all";
+    renderAll();
+  });
+  roleBadgeBtn.addEventListener("click", () => showOnboarding(true));
+  onboardingCancel.addEventListener("click", hideOnboarding);
+
+  function openTasksByBucket(bucket, category){
+    return state.tasks
+      .filter(t => t.status === "open" && t.durationBucket === bucket)
+      .filter(t => !category || category === "all" || t.roleTag === category)
+      .sort((a, b) => a.priority - b.priority || a.createdAt - b.createdAt);
+  }
+
+  function renderCounts(){
+    ["5", "15", "45"].forEach(b => {
+      const el = document.getElementById("count" + b);
+      const n = openTasksByBucket(b).length;
+      el.textContent = n + " queued";
+    });
+  }
+
+  function renderPickerActive(){
+    picker.querySelectorAll(".crack-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.bucket === activeBucket);
+    });
+  }
+
+  const ENERGY_LABEL = { low: "Low energy", admin: "Admin", focus: "Focus", social: "Social" };
+  const BUCKET_LABEL = { 5: "5 min", 15: "15 min", 45: "45+ min" };
+  const categoryRow = document.getElementById("categoryRow");
+
+  function renderCategoryRow(){
+    if(!activeBucket || !state.roles || state.roles.length < 2){
+      categoryRow.hidden = true;
+      categoryRow.innerHTML = "";
+      return;
+    }
+    const allInBucket = openTasksByBucket(activeBucket);
+    if(activeCategory !== "all" && !state.roles.includes(activeCategory)) activeCategory = "all";
+
+    categoryRow.hidden = false;
+    categoryRow.innerHTML = "";
+
+    const makeChip = (key, label, emoji, count) => {
+      const chip = document.createElement("button");
+      chip.className = "category-chip" + (activeCategory === key ? " active" : "");
+      chip.innerHTML = `${emoji ? emoji + " " : ""}${label} <span class="n">${count}</span>`;
+      chip.disabled = count === 0 && key !== "all";
+      chip.addEventListener("click", () => {
+        activeCategory = key;
+        delete state.shownTaskByBucket[activeBucket];
+        saveState();
+        renderAll();
+      });
+      categoryRow.appendChild(chip);
+    };
+
+    makeChip("all", "All", "", allInBucket.length);
+    state.roles.forEach(r => {
+      const meta = ROLE_META[r];
+      if(!meta) return;
+      const count = allInBucket.filter(t => t.roleTag === r).length;
+      makeChip(r, meta.label, meta.emoji, count);
+    });
+  }
+
+  function renderCard(){
+    renderCategoryRow();
+    if(!activeBucket){
+      cardArea.innerHTML = '<div class="empty-state">Tap a time block above to get your one task.</div>';
+      return;
+    }
+    const queue = openTasksByBucket(activeBucket, activeCategory);
+    if(queue.length === 0){
+      const catNote = (activeCategory !== "all" && ROLE_META[activeCategory])
+        ? ` in ${ROLE_META[activeCategory].label}` : "";
+      cardArea.innerHTML = `<div class="empty-state">Nothing queued for ${BUCKET_LABEL[activeBucket]}${catNote}. Nice work — or drop a new thought above.</div>`;
+      return;
+    }
+    let shownId = state.shownTaskByBucket[activeBucket];
+    let task = queue.find(t => t.id === shownId);
+    if(!task){
+      task = queue[0];
+      state.shownTaskByBucket[activeBucket] = task.id;
+      saveState();
+    }
+
+    cardArea.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "task-card";
+
+    const project = state.projects.find(p => p.id === task.projectId);
+    const projectPill = document.createElement("button");
+    projectPill.className = "project-pill" + (project ? "" : " unassigned");
+    projectPill.innerHTML = project
+      ? `<span class="dot" style="background:${project.color}"></span>${escapeHtml(project.name)}`
+      : "+ Assign project";
+    projectPill.addEventListener("click", () => maybePromptProjectAssign([task], true));
+
+    const tagRow = document.createElement("div");
+    tagRow.className = "tag-row";
+    tagRow.innerHTML = `
+      <span class="tag energy-${task.energyType}">${ENERGY_LABEL[task.energyType]}</span>
+      <span class="tag">${BUCKET_LABEL[task.durationBucket]}</span>
+      ${task.taskType === "call" ? '<span class="tag type-call">📞 Call</span>' : ""}
+    `;
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.contentEditable = "true";
+    title.spellcheck = false;
+    title.textContent = task.title;
+    title.addEventListener("blur", () => {
+      const val = title.textContent.trim();
+      if(val && val !== task.title){
+        task.title = val;
+        remoteUpdateTask(task.id, { title: val });
+      }
+      saveState();
+      renderQueueList();
+    });
+
+    const metaLine = document.createElement("div");
+    metaLine.className = "meta-line";
+    metaLine.textContent = queue.length > 1 ? `${queue.length - 1} more in this bucket` : "Last one in this bucket";
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    const doneBtn = document.createElement("button");
+    doneBtn.className = "done";
+    doneBtn.textContent = "✓ Mark done";
+    doneBtn.addEventListener("click", () => {
+      task.status = "done";
+      task.completedAt = Date.now();
+      delete state.shownTaskByBucket[activeBucket];
+      saveState();
+      remoteUpdateTask(task.id, { status: "done", completed_at: new Date().toISOString() });
+      renderAll();
+    });
+
+    const skipBtn = document.createElement("button");
+    skipBtn.textContent = "Skip → next";
+    skipBtn.addEventListener("click", () => {
+      const rest = queue.filter(t => t.id !== task.id);
+      state.shownTaskByBucket[activeBucket] = rest.length ? rest[0].id : null;
+      saveState();
+      renderCard();
+    });
+
+    actions.appendChild(doneBtn);
+    actions.appendChild(skipBtn);
+
+    if(task.taskType === "call"){
+      const callBtn = document.createElement("button");
+      callBtn.className = "call";
+      callBtn.textContent = "📞 Open call script";
+      callBtn.addEventListener("click", () => openDrawer({ prefillGoal: task.title, taskId: task.id }));
+      actions.appendChild(callBtn);
+    }
+
+    const timerRow = document.createElement("div");
+    timerRow.className = "timer-row";
+    const timerBtn = document.createElement("button");
+    const isRunning = state.activeTimer && state.activeTimer.taskId === task.id;
+    if(isRunning){
+      timerBtn.className = "running";
+      timerBtn.innerHTML = `⏸ Stop timer — <span class="timer-live">${formatElapsed(Date.now() - state.activeTimer.startedAt)}</span>`;
+      timerBtn.addEventListener("click", () => stopTimer());
+    } else {
+      timerBtn.textContent = "▶ Start timer";
+      timerBtn.addEventListener("click", () => startTimer(task));
+    }
+    timerRow.appendChild(timerBtn);
+
+    card.append(projectPill, tagRow, title, metaLine, actions, timerRow);
+    cardArea.appendChild(card);
+  }
+
+  // ===========================================================================
+  // Time tracking: one active timer at a time, ticking bar + per-card button.
+  // ===========================================================================
+  function formatElapsed(ms){
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = n => String(n).padStart(2, "0");
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+
+  const timerBar = document.getElementById("timerBar");
+  const timerBarTitle = document.getElementById("timerBarTitle");
+
+  function startTimer(task){
+    if(state.activeTimer) stopTimer();
+    state.activeTimer = {
+      taskId: task.id, title: task.title, roleTag: task.roleTag || null,
+      projectId: task.projectId || null, startedAt: Date.now()
+    };
+    saveState();
+    renderCard();
+    renderTimerBar();
+  }
+
+  function stopTimer(){
+    if(!state.activeTimer) return;
+    const at = state.activeTimer;
+    const endedAt = Date.now();
+    const durationSeconds = Math.round((endedAt - at.startedAt) / 1000);
+    if(durationSeconds >= 1){
+      const project = state.projects.find(p => p.id === at.projectId);
+      const entry = {
+        id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "te" + Date.now(),
+        taskId: at.taskId, title: at.title, roleTag: at.roleTag,
+        projectId: at.projectId || null,
+        projectName: project ? project.name : null,
+        rate: project ? project.rate : null,
+        startedAt: at.startedAt, endedAt, durationSeconds
+      };
+      state.timeEntries.push(entry);
+      remoteInsertTimeEntry(entry);
+    }
+    state.activeTimer = null;
+    saveState();
+    renderCard();
+    renderTimerBar();
+  }
+
+  document.getElementById("timerBarStop").addEventListener("click", stopTimer);
+
+  function renderTimerBar(){
+    if(!state.activeTimer){
+      timerBar.classList.remove("show");
+      return;
+    }
+    timerBarTitle.textContent = state.activeTimer.title;
+    timerBar.classList.add("show");
+    tickTimers();
+  }
+
+  function tickTimers(){
+    if(!state.activeTimer) return;
+    const elapsed = formatElapsed(Date.now() - state.activeTimer.startedAt);
+    document.querySelectorAll(".timer-live").forEach(el => { el.textContent = elapsed; });
+  }
+  setInterval(tickTimers, 1000);
+
+  function renderQueueList(){
+    queueList.innerHTML = "";
+    const open = state.tasks.filter(t => t.status === "open")
+      .sort((a, b) => (a.durationBucket - b.durationBucket) || a.priority - b.priority);
+    if(open.length === 0){
+      queueList.innerHTML = '<div class="empty-state">Queue is empty.</div>';
+      return;
+    }
+    open.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "queue-row";
+      row.innerHTML = `
+        <span class="qtitle">${escapeHtml(t.title)}</span>
+        <span class="qtags">
+          <span class="tag">${BUCKET_LABEL[t.durationBucket]}</span>
+          ${t.taskType === "call" ? '<span class="tag type-call">📞</span>' : ""}
+        </span>
+      `;
+      row.addEventListener("click", () => {
+        activeBucket = t.durationBucket;
+        activeCategory = t.roleTag || "all";
+        state.shownTaskByBucket[activeBucket] = t.id;
+        saveState();
+        renderAll();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      queueList.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderAll(){
+    renderCounts();
+    renderPickerActive();
+    renderCard();
+    renderQueueList();
+    renderTimerBar();
+  }
+
+  // ---- "Where did it go?" confirmation: pulse the bucket + actionable toast ----
+  function pulseBucket(bucket){
+    const btn = picker.querySelector(`.crack-btn[data-bucket="${bucket}"]`);
+    if(!btn) return;
+    btn.classList.remove("pulse"); void btn.offsetWidth; btn.classList.add("pulse");
+    setTimeout(() => btn.classList.remove("pulse"), 800);
+    const countEl = document.getElementById("count" + bucket);
+    countEl.classList.remove("bump"); void countEl.offsetWidth; countEl.classList.add("bump");
+    setTimeout(() => countEl.classList.remove("bump"), 400);
+  }
+
+  let addToastTimer = null;
+  let lastAddedBucket = null;
+  let lastAddedTaskId = null;
+  let lastAddedRoleTag = null;
+
+  function showAddToast(message, bucket, taskId, roleTag){
+    lastAddedBucket = bucket;
+    lastAddedTaskId = taskId;
+    lastAddedRoleTag = roleTag || null;
+    document.getElementById("addToastMsg").textContent = message;
+    const toastEl = document.getElementById("addToast");
+    toastEl.classList.add("show");
+    clearTimeout(addToastTimer);
+    addToastTimer = setTimeout(() => toastEl.classList.remove("show"), 5000);
+  }
+
+  document.getElementById("addToastJump").addEventListener("click", () => {
+    if(!lastAddedBucket) return;
+    activeBucket = lastAddedBucket;
+    activeCategory = lastAddedRoleTag || "all";
+    state.shownTaskByBucket[activeBucket] = lastAddedTaskId;
+    saveState();
+    renderAll();
+    document.getElementById("addToast").classList.remove("show");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  picker.addEventListener("click", (e) => {
+    const btn = e.target.closest(".crack-btn");
+    if(!btn) return;
+    const bucket = btn.dataset.bucket;
+    activeBucket = activeBucket === bucket ? null : bucket;
+    activeCategory = "all";
+    renderAll();
+  });
+
+  listToggleBtn.addEventListener("click", () => {
+    const open = queueList.classList.toggle("open");
+    listToggleBtn.textContent = open ? "Hide full queue ▴" : "Show full queue ▾";
+  });
+
+  // ===========================================================================
+  // Feature B: single-input brain dump
+  // ===========================================================================
+  function submitDump(){
+    const raw = dumpInput.value;
+    const parsed = parseTaskLine(raw, state.roles);
+    if(!parsed){ return; }
+    const task = addTask(parsed, "brain_dump");
+    saveState();
+    dumpInput.value = "";
+    dumpHint.textContent = `Added "${task.title}" → ${BUCKET_LABEL[task.durationBucket]} · ${ENERGY_LABEL[task.energyType]}`;
+    renderAll();
+    pulseBucket(task.durationBucket);
+    const roleMeta = parsed.roleKey && ROLE_META[parsed.roleKey];
+    const roleNote = roleMeta ? ` (flagged as a ${roleMeta.label} task)` : "";
+    showAddToast(`Added to your ${BUCKET_LABEL[task.durationBucket]} bucket ✓${roleNote}`, task.durationBucket, task.id, task.roleTag);
+    setTimeout(() => {
+      dumpHint.textContent = "We'll pull the title, guess the time it takes, and tag the energy it needs.";
+    }, 3200);
+    maybePromptProjectAssign([task]);
+  }
+  dumpBtn.addEventListener("click", submitDump);
+  dumpInput.addEventListener("keydown", (e) => { if(e.key === "Enter") submitDump(); });
+
+  // ===========================================================================
+  // Feature C: bulk list importer
+  // ===========================================================================
+  bulkToggleBtn.addEventListener("click", () => {
+    const open = bulkPanel.classList.toggle("open");
+    bulkToggleBtn.textContent = open ? "← Hide bulk import" : "Paste a whole list instead →";
+  });
+
+  bulkImportBtn.addEventListener("click", () => {
+    const raw = bulkInput.value;
+    if(!raw.trim()) return;
+    const lines = raw
+      .split(/\r?\n|(?<=[.!?])\s+(?=[A-Z])/)
+      .map(l => l.replace(/^[\s\-•*\d.)]+/, "").trim())
+      .filter(Boolean);
+
+    let count = 0;
+    const bucketCounts = { 5: 0, 15: 0, 45: 0 };
+    let lastTask = null;
+    const addedTasks = [];
+    lines.forEach(line => {
+      const parsed = parseTaskLine(line, state.roles);
+      if(parsed && parsed.title){
+        lastTask = addTask(parsed, "bulk_import");
+        addedTasks.push(lastTask);
+        bucketCounts[parsed.durationBucket]++;
+        count++;
+      }
+    });
+    saveState();
+    bulkInput.value = "";
+    bulkPanel.classList.remove("open");
+    bulkToggleBtn.textContent = "Paste a whole list instead →";
+    dumpHint.textContent = `Imported ${count} task${count === 1 ? "" : "s"} from your list.`;
+    renderAll();
+
+    const breakdown = ["5", "15", "45"]
+      .filter(b => bucketCounts[b] > 0)
+      .map(b => `${bucketCounts[b]} in ${BUCKET_LABEL[b]}`)
+      .join(", ");
+    ["5", "15", "45"].forEach(b => { if(bucketCounts[b] > 0) pulseBucket(b); });
+    if(count > 0){
+      showAddToast(`Imported ${count} task${count === 1 ? "" : "s"} — ${breakdown} ✓`, lastTask.durationBucket, lastTask.id, lastTask.roleTag);
+    }
+    setTimeout(() => {
+      dumpHint.textContent = "We'll pull the title, guess the time it takes, and tag the energy it needs.";
+    }, 3200);
+    maybePromptProjectAssign(addedTasks);
+  });
+
+  // ===========================================================================
+  // Feature D: call script drawer + AI prompt engine
+  // ===========================================================================
+  const drawer = document.getElementById("drawer");
+  const overlay = document.getElementById("overlay");
+  const goalInput = document.getElementById("goalInput");
+  const wordCount = document.getElementById("wordCount");
+  const scriptOutput = document.getElementById("scriptOutput");
+  const scriptTiming = document.getElementById("scriptTiming");
+  const scriptLabel = document.getElementById("scriptLabel");
+  const drawerSub = document.getElementById("drawerSub");
+  const toast = document.getElementById("toast");
+
+  let currentTaskId = null;
+
+  function openDrawer({ prefillGoal, taskId } = {}){
+    currentTaskId = taskId || null;
+    drawer.classList.add("open");
+    overlay.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+    drawerSub.textContent = "120-second script, ready to read";
+
+    if(prefillGoal){
+      goalInput.value = prefillGoal;
+      updateWordCount();
+      generateScript();
+    } else {
+      renderDefaultScript();
+    }
+  }
+  function closeDrawer(){
+    drawer.classList.remove("open");
+    overlay.classList.remove("open");
+    drawer.setAttribute("aria-hidden", "true");
+  }
+  document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+  overlay.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeDrawer(); });
+
+  goalInput.addEventListener("input", updateWordCount);
+  function updateWordCount(){
+    const words = goalInput.value.trim().split(/\s+/).filter(Boolean);
+    wordCount.textContent = words.length + " word" + (words.length === 1 ? "" : "s");
+    wordCount.classList.toggle("over", words.length > 8);
+  }
+
+  document.getElementById("generateBtn").addEventListener("click", generateScript);
+  document.getElementById("defaultScriptBtn").addEventListener("click", renderDefaultScript);
+
+  function parseGoal(goal){
+    const g = goal.trim();
+    const verbMatch = g.match(/^(call|ask|tell|confirm|request|follow up on|reschedule|cancel|check on|remind)\b/i);
+    const verb = verbMatch ? verbMatch[0].toLowerCase() : "reach out about";
+    let rest = verbMatch ? g.slice(verbMatch[0].length).trim() : g;
+    rest = rest.replace(/^(about|regarding|re:)\s+/i, "");
+    if(verb === "call") return { verb: "reach out about", subject: rest || g };
+    return { verb, subject: rest || g };
+  }
+
+  function buildAsk(verb, subject){
+    if(/ask|request/.test(verb)) return `Specifically, I'm hoping we can work out ${subject} — what would that look like on your end?`;
+    if(/confirm|check on/.test(verb)) return `I just want to make sure everything's on track with ${subject} before it becomes a problem for either of us.`;
+    if(/reschedule|cancel/.test(verb)) return `I need to ${verb} ${subject} — I'm flexible on timing, so whatever's easiest for you works for me.`;
+    if(/follow up/.test(verb)) return `I wanted to follow up and see where things stand with ${subject}.`;
+    return `The short version: ${subject}. I wanted to loop you in directly rather than let it sit.`;
+  }
+
+  function buildScript(goal){
+    const { verb, subject } = parseGoal(goal);
+    const opener = "Hi, it's [Your Name] — thanks for picking up. I've only got a couple minutes, so I'll be quick.";
+    const purpose = `I'm calling to ${verb} ${subject}.`;
+    const ask = buildAsk(verb, subject);
+    const fallback = "If today doesn't work for whatever reason, just point me to whoever handles this or the best way to follow up, and I'll take it from there.";
+    const confirm = "Can you confirm that works on your end, or let me know what you'd need from me?";
+    const nextStep = "I'll send a quick note in writing after we hang up so we both have it.";
+    const closer = "Thanks so much for your time — I really appreciate it.";
+    return [opener, purpose, ask, fallback, confirm, nextStep, closer].join("\n\n");
+  }
+
+  function estimateSeconds(text){
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
+    return Math.round(words / 2.6); // ~155 wpm spoken pace
+  }
+
+  function generateScript(){
+    const goal = goalInput.value.trim();
+    if(!goal){
+      scriptOutput.textContent = "Enter a call goal above, then generate.";
+      return;
+    }
+    const script = buildScript(goal);
+    scriptOutput.textContent = script;
+    scriptLabel.textContent = "120-second script";
+    scriptTiming.textContent = "~" + estimateSeconds(script) + " sec read time";
+    persistScript(goal, script, 120);
+  }
+
+  // Which hat governs the default script right now: the specific task's own
+  // roleTag if we're in a task's drawer, otherwise the primary (first-picked) hat.
+  function defaultScriptRole(){
+    if(currentTaskId){
+      const t = state.tasks.find(x => x.id === currentTaskId);
+      if(t && t.roleTag && ROLE_META[t.roleTag]) return t.roleTag;
+    }
+    return (state.roles && state.roles[0]) || "virtual_assistant";
+  }
+
+  function renderDefaultScript(){
+    const role = defaultScriptRole();
+    const script = state.scriptTemplates[role] || DEFAULT_TEMPLATES.virtual_assistant;
+    scriptOutput.textContent = script;
+    scriptLabel.textContent = "Default script";
+    scriptOutput.dataset.templateRole = role;
+    scriptTiming.textContent = "~" + estimateSeconds(script) + " sec read time";
+  }
+
+  // Editing the script output directly persists it as that hat's new default,
+  // per "all views must be fully editable ... rewrite scripts on the fly."
+  scriptOutput.addEventListener("blur", () => {
+    const text = scriptOutput.textContent.trim();
+    if(text && scriptLabel.textContent === "Default script"){
+      const role = scriptOutput.dataset.templateRole || defaultScriptRole();
+      state.scriptTemplates[role] = text;
+      saveState();
+      remoteSaveTemplate(role, text);
+    }
+  });
+
+  function persistScript(goal, script, targetSeconds){
+    if(!state.callScripts) state.callScripts = [];
+    state.callScripts.push({
+      id: "cs" + Date.now(),
+      taskId: currentTaskId,
+      goal, script, targetSeconds,
+      createdAt: new Date().toISOString()
+    });
+    saveState();
+    remoteInsertCallScript(goal, script, targetSeconds, currentTaskId);
+  }
+
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    const text = scriptOutput.textContent;
+    if(!text || text.startsWith("Your script will appear")) return;
+    try{ await navigator.clipboard.writeText(text); }
+    catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    showToast();
+  });
+
+  function showToast(){
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 1600);
+  }
+
+  // ===========================================================================
+  // Time report: date-range filter over time entries + Excel export.
+  // ===========================================================================
+  const reportOverlay = document.getElementById("reportOverlay");
+  const rangeRow = document.getElementById("rangeRow");
+  const customRange = document.getElementById("customRange");
+  const customFrom = document.getElementById("customFrom");
+  const customTo = document.getElementById("customTo");
+  const reportSummary = document.getElementById("reportSummary");
+  const entryTableBody = document.getElementById("entryTableBody");
+  let currentRangeDays = 30;
+  let currentEntries = [];
+
+  function rangeToDates(days){
+    const to = new Date();
+    to.setHours(23, 59, 59, 999);
+    if(days === "custom"){
+      const from = customFrom.value ? new Date(customFrom.value + "T00:00:00") : new Date(to.getTime() - 30 * 86400000);
+      const toCustom = customTo.value ? new Date(customTo.value + "T23:59:59") : to;
+      return { fromMs: from.getTime(), toMs: toCustom.getTime() };
+    }
+    const from = new Date(to.getTime() - (days - 1) * 86400000);
+    from.setHours(0, 0, 0, 0);
+    return { fromMs: from.getTime(), toMs: to.getTime() };
+  }
+
+  async function loadReport(days){
+    currentRangeDays = days;
+    rangeRow.querySelectorAll(".range-chip").forEach(c => {
+      c.classList.toggle("active", c.dataset.days === String(days));
+    });
+    customRange.classList.toggle("open", days === "custom");
+
+    const { fromMs, toMs } = rangeToDates(days);
+    entryTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px;">Loading…</td></tr>`;
+
+    let entries = null;
+    if(remoteReady){
+      entries = await remoteFetchTimeEntries(fromMs, toMs);
+    }
+    const localInRange = state.timeEntries.filter(e => e.startedAt >= fromMs && e.startedAt <= toMs);
+    if(!entries){
+      entries = localInRange;
+    } else {
+      // A remote insert can fail silently (e.g. before a schema patch is run,
+      // or a dropped connection) — don't let that make logged time vanish
+      // from the report. Keep any local entry the remote fetch doesn't have.
+      const remoteIds = new Set(entries.map(e => e.id));
+      entries = entries.concat(localInRange.filter(e => !remoteIds.has(e.id)));
+    }
+    entries.sort((a, b) => b.startedAt - a.startedAt);
+    currentEntries = entries;
+    renderReport(entries);
+  }
+
+  function earningsFor(entry){
+    if(entry.rate == null) return null;
+    return (entry.durationSeconds / 3600) * entry.rate;
+  }
+
+  function renderReport(entries){
+    const totalSeconds = entries.reduce((sum, e) => sum + e.durationSeconds, 0);
+    const totalEarnings = entries.reduce((sum, e) => sum + (earningsFor(e) || 0), 0);
+    const byRole = {};
+    const byProject = {};
+    entries.forEach(e => {
+      const roleKey = e.roleTag || "other";
+      byRole[roleKey] = (byRole[roleKey] || 0) + e.durationSeconds;
+      const projKey = e.projectName || null;
+      if(projKey){
+        if(!byProject[projKey]) byProject[projKey] = { seconds: 0, earnings: 0 };
+        byProject[projKey].seconds += e.durationSeconds;
+        byProject[projKey].earnings += (earningsFor(e) || 0);
+      }
+    });
+
+    reportSummary.innerHTML = "";
+    const totalTile = document.createElement("div");
+    totalTile.className = "stat-tile";
+    totalTile.innerHTML = `<div class="n">${formatHours(totalSeconds)}</div><div class="l">Total logged</div>`;
+    reportSummary.appendChild(totalTile);
+
+    if(totalEarnings > 0){
+      const earnTile = document.createElement("div");
+      earnTile.className = "stat-tile";
+      earnTile.innerHTML = `<div class="n">${formatMoney(totalEarnings)}</div><div class="l">Total earned</div>`;
+      reportSummary.appendChild(earnTile);
+    }
+
+    Object.keys(byProject).forEach(name => {
+      const p = byProject[name];
+      const tile = document.createElement("div");
+      tile.className = "stat-tile";
+      const moneyLine = p.earnings > 0 ? ` · ${formatMoney(p.earnings)}` : "";
+      tile.innerHTML = `<div class="n">${formatHours(p.seconds)}</div><div class="l">📁 ${escapeHtml(name)}${moneyLine}</div>`;
+      reportSummary.appendChild(tile);
+    });
+
+    Object.keys(byRole).forEach(key => {
+      const meta = ROLE_META[key];
+      const tile = document.createElement("div");
+      tile.className = "stat-tile";
+      tile.innerHTML = `<div class="n">${formatHours(byRole[key])}</div><div class="l">${meta ? meta.emoji + " " + meta.label : "Other"}</div>`;
+      reportSummary.appendChild(tile);
+    });
+
+    entryTableBody.innerHTML = "";
+    if(entries.length === 0){
+      entryTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px;">No time logged in this range yet.</td></tr>`;
+      return;
+    }
+    entries.forEach(e => {
+      const row = document.createElement("tr");
+      const meta = ROLE_META[e.roleTag];
+      const earnings = earningsFor(e);
+      const dateStr = new Date(e.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      row.innerHTML = `
+        <td>${dateStr}</td>
+        <td>${escapeHtml(e.title)}</td>
+        <td>${meta ? meta.emoji + " " + meta.label : "—"}</td>
+        <td>${e.projectName ? escapeHtml(e.projectName) : "—"}</td>
+        <td class="num">${formatHours(e.durationSeconds)}</td>
+        <td class="num">${earnings != null ? formatMoney(earnings) : "—"}</td>
+      `;
+      entryTableBody.appendChild(row);
+    });
+  }
+
+  function formatHours(totalSeconds){
+    const h = totalSeconds / 3600;
+    return h.toFixed(2) + "h";
+  }
+  function formatMoney(n){
+    return "$" + n.toFixed(2);
+  }
+
+  rangeRow.addEventListener("click", (e) => {
+    const chip = e.target.closest(".range-chip");
+    if(!chip) return;
+    const days = chip.dataset.days === "custom" ? "custom" : Number(chip.dataset.days);
+    loadReport(days);
+  });
+  customFrom.addEventListener("change", () => { if(currentRangeDays === "custom") loadReport("custom"); });
+  customTo.addEventListener("change", () => { if(currentRangeDays === "custom") loadReport("custom"); });
+
+  document.getElementById("reportBtn").addEventListener("click", () => {
+    reportOverlay.classList.add("open");
+    reportOverlay.setAttribute("aria-hidden", "false");
+    loadReport(currentRangeDays);
+  });
+  document.getElementById("reportClose").addEventListener("click", () => {
+    reportOverlay.classList.remove("open");
+    reportOverlay.setAttribute("aria-hidden", "true");
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    if(!currentEntries.length){
+      showToast();
+      return;
+    }
+    if(typeof XLSX === "undefined"){
+      alert("Export library didn't load — check your connection and try again.");
+      return;
+    }
+    const rows = currentEntries.map(e => ({
+      Date: new Date(e.startedAt).toLocaleDateString(),
+      Task: e.title,
+      Category: ROLE_META[e.roleTag] ? ROLE_META[e.roleTag].label : "",
+      Project: e.projectName || "",
+      "Start time": new Date(e.startedAt).toLocaleTimeString(),
+      "End time": new Date(e.endedAt).toLocaleTimeString(),
+      "Duration (hrs)": Number((e.durationSeconds / 3600).toFixed(2)),
+      "Rate ($/hr)": e.rate != null ? e.rate : "",
+      "Earnings ($)": earningsFor(e) != null ? Number(earningsFor(e).toFixed(2)) : ""
+    }));
+    const totalSeconds = currentEntries.reduce((s, e) => s + e.durationSeconds, 0);
+    const totalEarnings = currentEntries.reduce((s, e) => s + (earningsFor(e) || 0), 0);
+    const totalRow = { Date: "", Task: "", Category: "", Project: "", "Start time": "", "End time": "TOTAL",
+      "Duration (hrs)": Number((totalSeconds / 3600).toFixed(2)),
+      "Rate ($/hr)": "",
+      "Earnings ($)": totalEarnings > 0 ? Number(totalEarnings.toFixed(2)) : "" };
+    rows.push(totalRow);
+
+    // One sheet per project (plus the combined "Time report" sheet) — makes
+    // pulling a single client's invoice a matter of picking the right tab.
+    const wb = XLSX.utils.book_new();
+    const mainWs = XLSX.utils.json_to_sheet(rows);
+    mainWs["!cols"] = [{ wch: 12 }, { wch: 36 }, { wch: 18 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, mainWs, "Time report");
+
+    const projectNames = [...new Set(currentEntries.map(e => e.projectName).filter(Boolean))];
+    projectNames.forEach(name => {
+      const entriesForProject = currentEntries.filter(e => e.projectName === name);
+      const projSeconds = entriesForProject.reduce((s, e) => s + e.durationSeconds, 0);
+      const projEarnings = entriesForProject.reduce((s, e) => s + (earningsFor(e) || 0), 0);
+      const sheetRows = entriesForProject.map(e => ({
+        Date: new Date(e.startedAt).toLocaleDateString(),
+        Task: e.title,
+        "Duration (hrs)": Number((e.durationSeconds / 3600).toFixed(2)),
+        "Rate ($/hr)": e.rate != null ? e.rate : "",
+        "Earnings ($)": earningsFor(e) != null ? Number(earningsFor(e).toFixed(2)) : ""
+      }));
+      sheetRows.push({ Date: "", Task: "TOTAL", "Duration (hrs)": Number((projSeconds / 3600).toFixed(2)),
+        "Rate ($/hr)": "", "Earnings ($)": projEarnings > 0 ? Number(projEarnings.toFixed(2)) : "" });
+      const projWs = XLSX.utils.json_to_sheet(sheetRows);
+      projWs["!cols"] = [{ wch: 12 }, { wch: 36 }, { wch: 14 }, { wch: 12 }, { wch: 14 }];
+      // Sheet names can't exceed 31 chars or contain []:*?/\
+      const safeName = name.replace(/[\[\]:*?/\\]/g, "").slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, projWs, safeName || "Project");
+    });
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Cracks-TimeReport-${stamp}.xlsx`);
+  });
+
+  // ===========================================================================
+  // Boot: render instantly from local cache, then reconcile with Supabase
+  // once auth + fetch resolve (or stay local-only if that fails).
+  // ===========================================================================
+  updateRoleBadge();
+  if(!state.onboarded){
+    showOnboarding(false);
+  }
+  renderAll();
+
+  initSupabase().then(async () => {
+    if(!remoteReady) return;
+    try{
+      const remote = await fetchRemoteState();
+      if(remote.roles && remote.roles.length) state.roles = remote.roles;
+      if(remote.homeschoolKids) state.homeschoolKids = remote.homeschoolKids;
+      if(remote.projects) state.projects = remote.projects;
+      if(remote.tasks.length || state.tasks.every(t => t.source)){
+        // Merge: keep any locally-created tasks the server doesn't have yet
+        // (e.g. added in the instant before auth resolved), server otherwise wins.
+        const remoteIds = new Set(remote.tasks.map(t => t.id));
+        const localOnly = state.tasks.filter(t => t.status === "open" && !remoteIds.has(t.id) && !t.source);
+        state.tasks = remote.tasks.concat(localOnly);
+      }
+      Object.assign(state.scriptTemplates, remote.scriptTemplates);
+      updateRoleBadge();
+      saveState();
+      renderAll();
+    }catch(e){
+      console.warn("Remote state fetch failed, staying local-only:", e);
+      remoteReady = false;
+      showSyncToast();
+    }
+  });
+})();
+</script>
+</body>
+</html>
