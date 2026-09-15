@@ -92,7 +92,14 @@
   }
   .onboarding-card h2{font-size:1.5rem;margin:0 0 8px;}
   .onboarding-card p{color:var(--text-dim);font-size:0.9rem;line-height:1.5;margin:0 0 24px;}
+  .role-group{margin-bottom:22px;}
+  .role-group-label{
+    font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--text-dim);margin:0 0 4px;
+  }
+  .role-group-desc{color:var(--text-dim);font-size:0.82rem;line-height:1.4;margin:0 0 10px;}
   .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .role-grid.single{grid-template-columns:1fr;}
   .role-card{
     min-height:110px;border-radius:18px;border:2px solid var(--border);
     background:var(--panel);cursor:pointer;
@@ -100,6 +107,7 @@
     font:inherit;font-size:0.86rem;font-weight:700;color:var(--text);
     transition:border-color .12s, background .12s;
   }
+  .role-grid.single .role-card{min-height:70px;flex-direction:row;}
   .role-card .emoji{font-size:1.8rem;}
   .role-card:active{transform:scale(0.98);}
   .role-card{position:relative;}
@@ -108,17 +116,21 @@
     content:"✓";position:absolute;top:8px;right:10px;
     font-size:0.85rem;font-weight:800;color:var(--sage-dark);
   }
-  /* 8 cards fill the 2-col grid evenly — no leftover row to special-case */
 
-  .kids-roster{margin-top:6px;}
-  .kid-add-row{display:flex;gap:6px;margin-top:8px;}
+  .kids-roster{margin-top:10px;}
+  .kids-roster .kicker{margin-top:0 !important;}
+  .kid-add-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .kid-add-row input[type="text"]{
-    flex:1;min-width:0;font:inherit;font-size:0.85rem;padding:10px;
+    flex:1 1 100%;min-width:0;font:inherit;font-size:0.85rem;padding:10px;
     border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);
   }
   .kid-add-row select{
-    font:inherit;font-size:0.85rem;padding:10px 8px;border-radius:10px;
+    flex:1;font:inherit;font-size:0.85rem;padding:10px 8px;border-radius:10px;
     border:1px solid var(--border);background:var(--bg);color:var(--text);
+  }
+  .kid-add-row label.hs-check{
+    display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--text-dim);
+    flex-shrink:0;padding:0 4px;
   }
   .kid-add-row button{
     flex-shrink:0;font:inherit;font-size:0.82rem;font-weight:700;padding:10px 12px;
@@ -497,9 +509,7 @@
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="role-badge" id="projectsBtn" aria-label="Manage projects" style="padding:8px 10px;">📁</button>
       <button class="role-badge" id="reportBtn" aria-label="Time report" style="padding:8px 10px;">📊</button>
-      <button class="role-badge" id="roleBadgeBtn" aria-label="Change role profile">
-        <span class="emoji" id="roleBadgeEmoji">🗂️</span>
-        <span id="roleBadgeLabel">Virtual Assistant</span>
+      <button class="role-badge" id="roleBadgeBtn" aria-label="Change role profile" style="padding:8px 10px;">
         <span class="gear">⚙️</span>
       </button>
     </div>
@@ -605,31 +615,55 @@
 <div class="onboarding-overlay" id="onboarding" aria-hidden="true">
   <div class="onboarding-card">
     <div class="kicker">Set up once — pick all that apply</div>
-    <h2>What's your world?</h2>
-    <p>Tap every hat you actually wear — most people running a house and a job wear more than one at once. Each one tunes how we guess task length and energy, and they all share one queue. Change this later from the badge in the header.</p>
-    <div class="role-grid" id="roleGrid">
-      <button class="role-card" data-role="toddler_mom"><span class="emoji">👶</span>Toddler Mom</button>
-      <button class="role-card" data-role="homeschool_mom"><span class="emoji">📚</span>Homeschool Mom</button>
-      <button class="role-card" data-role="first_time_mom"><span class="emoji">🍼</span>First-Time Mom</button>
-      <button class="role-card" data-role="custom_sandbox"><span class="emoji">🧩</span>Custom</button>
-      <button class="role-card" data-role="virtual_assistant"><span class="emoji">🗂️</span>Virtual Assistant</button>
-      <button class="role-card" data-role="medical_biller"><span class="emoji">🩺</span>Medical Biller</button>
-      <button class="role-card" data-role="content_creator"><span class="emoji">🎬</span>Content Creator</button>
-      <button class="role-card" data-role="executive"><span class="emoji">💼</span>Executive</button>
-    </div>
+    <h2>Tell us about your world</h2>
+    <p>This isn't just a form — it's how the app learns to recognize your tasks automatically, guess how long they'll take, and file them under the right category, so you don't have to tag everything by hand every time. Change any of this later from the badge in the header.</p>
 
-    <div class="kids-roster" id="kidsRoster" hidden>
-      <div class="kicker" style="margin-top:16px;">Kids (for homeschool planning)</div>
-      <div id="kidsList"></div>
-      <div class="kid-add-row">
-        <input type="text" id="kidNameInput" placeholder="Child's name" />
-        <select id="kidGradeInput">
-          <option>Pre-K</option><option>K</option>
-          <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option>
-          <option>5th</option><option>6th</option><option>7th</option><option>8th</option>
-          <option>9th</option><option>10th</option><option>11th</option><option>12th</option>
-        </select>
-        <button id="kidAddBtn" type="button">+ Add</button>
+    <div id="roleGrid">
+      <div class="role-group">
+        <div class="role-group-label">Professional</div>
+        <div class="role-group-desc">The work you get paid for.</div>
+        <div class="role-grid">
+          <button class="role-card" data-role="virtual_assistant"><span class="emoji">🗂️</span>Virtual Assistant</button>
+          <button class="role-card" data-role="medical_biller"><span class="emoji">🩺</span>Medical Biller</button>
+          <button class="role-card" data-role="content_creator"><span class="emoji">🎬</span>Content Creator</button>
+          <button class="role-card" data-role="executive"><span class="emoji">💼</span>Executive</button>
+          <button class="role-card" data-role="custom_sandbox"><span class="emoji">🧩</span>Custom</button>
+        </div>
+      </div>
+
+      <div class="role-group">
+        <div class="role-group-label">Parent</div>
+        <div class="role-group-desc">Add every kid in your world — each one's stage tunes what we recognize, so a toddler and a teenager under the same roof both get picked up correctly.</div>
+        <div class="role-grid single">
+          <button class="role-card" data-role="parent"><span class="emoji">👪</span>Parent</button>
+        </div>
+
+        <div class="kids-roster" id="kidsRoster" hidden>
+          <div class="kicker" style="margin-top:16px;">Kids</div>
+          <div id="kidsList"></div>
+          <div class="kid-add-row">
+            <input type="text" id="kidNameInput" placeholder="Child's name" />
+            <select id="kidStageInput">
+              <option value="baby">Baby (0–1)</option>
+              <option value="toddler">Toddler (1–3)</option>
+              <option value="preschool">Preschool (3–5)</option>
+              <option value="big_kid">Big Kid (5–10)</option>
+              <option value="tween">Tween (10–13)</option>
+              <option value="teen">Teen (13–18)</option>
+              <option value="adult">Grown (18+)</option>
+            </select>
+            <label class="hs-check"><input type="checkbox" id="kidHomeschoolInput" /> Homeschooled</label>
+            <button id="kidAddBtn" type="button">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="role-group">
+        <div class="role-group-label">Home &amp; Chores</div>
+        <div class="role-group-desc">Running the house itself — meals, cleaning, errands, admin — whether or not kids are involved.</div>
+        <div class="role-grid single">
+          <button class="role-card" data-role="home_chore"><span class="emoji">🏠</span>Home &amp; Chores</button>
+        </div>
       </div>
     </div>
 
@@ -745,7 +779,7 @@
   }
 
   async function fetchRemoteState(){
-    const result = { roles: null, tasks: [], scriptTemplates: {}, homeschoolKids: null, projects: null };
+    const result = { roles: null, tasks: [], scriptTemplates: {}, kids: null, projects: null };
     const [{ data: profile }, { data: tasks }, { data: templates }, { data: projects }] = await Promise.all([
       supa.from("profiles").select("role_type, active_roles, homeschool_kids").eq("id", userId).maybeSingle(),
       supa.from("tasks").select("*").eq("user_id", userId).eq("status", "open").order("priority").order("created_at"),
@@ -758,7 +792,7 @@
       // (e.g. schema patch not run yet, so the column doesn't exist server-side).
       if(profile.active_roles && profile.active_roles.length) result.roles = profile.active_roles;
       else if(profile.role_type) result.roles = [profile.role_type];
-      if(profile.homeschool_kids) result.homeschoolKids = profile.homeschool_kids;
+      if(profile.homeschool_kids) result.kids = profile.homeschool_kids;
     }
     if(tasks){
       result.tasks = tasks.map(t => ({
@@ -809,10 +843,10 @@
     }catch(e){ console.warn("update roles failed", e); }
   }
 
-  async function remoteSaveHomeschoolKids(kids){
+  async function remoteSaveKids(kids){
     if(!remoteReady) return;
     try{ await supa.from("profiles").update({ homeschool_kids: kids }).eq("id", userId); }
-    catch(e){ console.warn("save homeschool kids failed", e); }
+    catch(e){ console.warn("save kids failed", e); }
   }
 
   async function remoteFetchProjects(){
@@ -914,10 +948,9 @@
     medical_biller: "Hi, this is [Your Name] calling on behalf of [Practice Name] regarding claim [claim number].\n\nI'm following up on [reason for call — denial, missing info, resubmission].\n\nCan you confirm the current status, and what's needed from our end to move it forward?\n\nI'll note that on the account and follow up in writing so we have a record on both sides. Thank you for your time.",
     content_creator: "Hi, it's [Your Name] — thanks for hopping on.\n\nI'm calling about [reason — collab, deliverable, usage rights].\n\nHere's what I'm thinking: [one-sentence pitch or ask].\n\nDoes that work on your end, or is there something you'd want adjusted?\n\nI'll send a quick recap by email so it's all in writing. Appreciate you making time.",
     executive: "Hi, [Your Name] here. I have a hard stop shortly, so I'll be brief.\n\nCalling regarding [reason for call].\n\nBottom line: [the ask or decision needed].\n\nCan we align on [next step] before I go?\n\nI'll circulate a short recap after this call. Thanks for your time.",
-    toddler_mom: "Hi, this is [Your Name]. I've got about two minutes before my toddler notices I've disappeared, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.",
-    homeschool_mom: "Hi, this is [Your Name]. I'm between lessons, so I only have a few minutes.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — is that something you can help with?\n\nFeel free to reach me back at [best way to reach you]. Thank you!",
-    first_time_mom: "Hi, this is [Your Name]. I only have a couple minutes before the baby needs me, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.",
-    custom_sandbox: "Hi, this is [Your Name]. I have a couple minutes, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nThanks so much for your time."
+    custom_sandbox: "Hi, this is [Your Name]. I have a couple minutes, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nThanks so much for your time.",
+    parent: "Hi, this is [Your Name]. I've got just a couple minutes before the kids need me, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.",
+    home_chore: "Hi, this is [Your Name]. I have a few minutes between errands, so I'll be quick.\n\nI'm calling about [reason for call].\n\nWhat I need is [specific ask] — is that something you can help with today?\n\nFeel free to reach me back at [best way to reach you]. Thank you!"
   };
 
   const defaultState = {
@@ -933,7 +966,7 @@
     shownTaskByBucket: {},
     timeEntries: [],
     activeTimer: null,
-    homeschoolKids: [],
+    kids: [],
     projects: []
   };
 
@@ -951,11 +984,33 @@
         if(typeof parsed.onboarded === "undefined") parsed.onboarded = true;
         if(!parsed.timeEntries) parsed.timeEntries = [];
         if(typeof parsed.activeTimer === "undefined") parsed.activeTimer = null;
-        if(!parsed.homeschoolKids) parsed.homeschoolKids = [];
         if(!parsed.projects) parsed.projects = [];
         // Migration: "mom_home" no longer exists as a selectable hat — anyone
         // who had it drops back to just their other hats (or the default).
         parsed.roles = parsed.roles.filter(r => r !== "mom_home");
+        // Migration: the old per-stage mom hats (toddler_mom/homeschool_mom/
+        // first_time_mom/custom_sandbox-as-mom) collapse into one "parent" hat
+        // with a stage-tagged kids roster instead.
+        const OLD_MOM_HATS = ["toddler_mom", "homeschool_mom", "first_time_mom"];
+        const hadOldMomHat = parsed.roles.some(r => OLD_MOM_HATS.includes(r));
+        if(hadOldMomHat){
+          parsed.roles = parsed.roles.filter(r => !OLD_MOM_HATS.includes(r));
+          parsed.roles.push("parent");
+        }
+        if(!parsed.kids){
+          const GRADE_TO_STAGE = {
+            "Pre-K": "preschool", "K": "big_kid",
+            "1st": "big_kid", "2nd": "big_kid", "3rd": "big_kid", "4th": "big_kid", "5th": "big_kid",
+            "6th": "tween", "7th": "tween", "8th": "tween",
+            "9th": "teen", "10th": "teen", "11th": "teen", "12th": "teen"
+          };
+          parsed.kids = (parsed.homeschoolKids || []).map(kid => ({
+            id: kid.id, name: kid.name,
+            stage: GRADE_TO_STAGE[kid.grade] || "big_kid",
+            homeschooled: true
+          }));
+        }
+        delete parsed.homeschoolKids;
         if(!parsed.roles.length) parsed.roles = ["virtual_assistant"];
         return parsed;
       }
@@ -1083,61 +1138,6 @@
         "deescalate department internal conflict", "brief operations head via call"
       ]}
     },
-    homeschool_mom: {
-      long: { energy: "focus", words: [
-        "plan weekly homeschool lesson", "grade curriculum worksheets", "organize co op portfolio documentation",
-        "order next semester books", "research field trip logistics", "audit state compliance logs",
-        "prepare science experiment supplies", "sort physical educational materials",
-        "plan homeschool curriculum", "research homeschool curriculum", "prep homeschool lesson plans",
-        "write lesson plans", "plan field trip", "research curriculum", "sort school paperwork"
-      ]},
-      short: { energy: "low", words: [
-        "print daily math worksheet", "check co op group chat", "bookmark unit study link",
-        "mark lesson box as done", "download digital reading log", "sharpen learning pencils",
-        "clear homeschool table space", "pack lunches", "sign school form", "reply to teacher email",
-        "check school portal", "print homework sheet", "sign permission slip", "check homework folder",
-        "label school supplies"
-      ]},
-      social: { energy: "social", words: [
-        "phone homeschool board coordinator", "call co op testing center", "interview local curriculum tutor",
-        "call the school about absence", "talk to teacher about concern", "call about school enrollment"
-      ]}
-    },
-    toddler_mom: {
-      long: { energy: "focus", words: [
-        "rotate toy bins systematically", "bleach and sanitize play area", "research preschool enrollment rules",
-        "order next size up seasonal wardrobe", "organize bedroom closet clutter", "plan toddler birthday logistics",
-        "organize kids closet", "deep clean the kitchen", "plan birthday party", "sort through outgrown clothes",
-        "organize the playroom", "deep clean bedrooms"
-      ]},
-      short: { energy: "low", words: [
-        "wipe down high chair tray", "add pull ups to target cart", "toss single load into laundry",
-        "hide broken plastic toy", "grab stray snack cups", "check monitor battery status",
-        "order emergency apple juice refill", "restock diaper bag", "text the sitter", "pick a dinner",
-        "decide what's for dinner", "figure out dinner", "what's for dinner", "confirm playdate",
-        "pack the diaper bag", "refill the pillbox", "restock snacks"
-      ]},
-      social: { energy: "social", words: [
-        "call pediatrician regarding milestones", "phone daycare waitlist coordinator", "call speech therapist scheduler",
-        "negotiate schedule with co-parent", "call daycare about pickup change", "call the dentist for kids"
-      ]}
-    },
-    first_time_mom: {
-      long: { energy: "focus", words: [
-        "research infant sleep training methods", "process baby registry return items", "file newborn insurance enrollment forms",
-        "sanitize breast pump parts batch", "organize nursery dresser inventory", "read infant development milestones guide",
-        "research pediatrician", "file kids medical paperwork", "plan family vacation"
-      ]},
-      short: { energy: "low", words: [
-        "track diaper change in app", "order diaper pail refills", "check baby monitor angle",
-        "add burp cloths to cart", "text lactation consult quick question", "download white noise audio loop",
-        "sip room temperature coffee"
-      ]},
-      social: { energy: "social", words: [
-        "call lactation consultant office", "phone advice nurse hotline", "call postpartum follow up coordinator",
-        "call the pediatrician"
-      ]}
-    },
     custom_sandbox: {
       long: { energy: "focus", words: [
         "custom project planning", "deep focus administrative task", "large household organization block",
@@ -1149,10 +1149,173 @@
       social: { energy: "social", words: [
         "custom client phone call negotiation", "emergency support hotline query", "personal schedule reconciliation call"
       ]}
+    },
+    home_chore: {
+      long: { energy: "focus", words: [
+        "deep clean the kitchen", "organize the playroom", "deep clean bedrooms", "meal plan the week",
+        "grocery list and meal plan", "plan the month's budget", "sort through outgrown clothes",
+        "reorganize the pantry", "deep clean the fridge", "plan family vacation"
+      ]},
+      short: { energy: "low", words: [
+        "pick a dinner", "decide what's for dinner", "figure out dinner", "what's for dinner",
+        "restock snacks", "run to the store", "quick grocery run", "take out the trash",
+        "fold a load of laundry", "wipe down counters", "water the plants", "pay a household bill"
+      ]},
+      social: { energy: "social", words: [
+        "call the plumber", "call about the appliance repair", "schedule a repair call",
+        "call the landlord", "call the utility company"
+      ]}
     }
   };
 
-  function matchRoleHint(lowerText, roles){
+  // Parenting task recognition is stage-based rather than role-based, since a
+  // single "Parent" hat can cover kids at very different ages at once — see
+  // STAGE_TASK_HINTS below, merged dynamically per the active kids roster.
+  const STAGE_TASK_HINTS = {
+    baby: {
+      long: { energy: "focus", words: [
+        "research infant sleep training methods", "process baby registry return items",
+        "file newborn insurance enrollment forms", "sanitize breast pump parts batch",
+        "organize nursery dresser inventory", "read infant development milestones guide",
+        "research pediatrician"
+      ]},
+      short: { energy: "low", words: [
+        "track diaper change in app", "order diaper pail refills", "check baby monitor angle",
+        "add burp cloths to cart", "text lactation consult quick question", "download white noise audio loop",
+        "restock diaper bag", "pack the diaper bag"
+      ]},
+      social: { energy: "social", words: [
+        "call lactation consultant office", "phone advice nurse hotline", "call postpartum follow up coordinator",
+        "call the pediatrician"
+      ]}
+    },
+    toddler: {
+      long: { energy: "focus", words: [
+        "rotate toy bins systematically", "bleach and sanitize play area", "research preschool enrollment rules",
+        "order next size up seasonal wardrobe", "organize kids closet", "plan toddler birthday logistics",
+        "plan birthday party"
+      ]},
+      short: { energy: "low", words: [
+        "wipe down high chair tray", "add pull ups to target cart", "toss single load into laundry",
+        "hide broken plastic toy", "grab stray snack cups", "check monitor battery status",
+        "order emergency apple juice refill", "text the sitter", "confirm playdate", "refill the pillbox"
+      ]},
+      social: { energy: "social", words: [
+        "call pediatrician regarding milestones", "phone daycare waitlist coordinator", "call speech therapist scheduler",
+        "negotiate schedule with co-parent", "call daycare about pickup change", "call the dentist for kids"
+      ]}
+    },
+    preschool: {
+      long: { energy: "focus", words: [
+        "research preschool enrollment", "prep preschool lesson", "plan sensory activity",
+        "organize kids closet", "sort through outgrown clothes"
+      ]},
+      short: { energy: "low", words: [
+        "pack lunches", "sign permission slip", "check school portal", "label school supplies",
+        "sign school form", "check homework folder"
+      ]},
+      social: { energy: "social", words: [
+        "call the preschool", "talk to teacher about concern", "call about school enrollment"
+      ]}
+    },
+    big_kid: {
+      long: { energy: "focus", words: [
+        "plan weekly lesson", "grade curriculum worksheets", "research field trip logistics",
+        "write lesson plans", "plan field trip", "sort school paperwork", "sign up for sports season",
+        "research after school activities"
+      ]},
+      short: { energy: "low", words: [
+        "pack lunches", "sign permission slip", "reply to teacher email", "check school portal",
+        "print homework sheet", "check homework folder", "label school supplies", "help with homework",
+        "pack the backpack"
+      ]},
+      social: { energy: "social", words: [
+        "call the school about absence", "talk to teacher about concern", "call about school enrollment",
+        "call the pediatrician for kids"
+      ]}
+    },
+    tween: {
+      long: { energy: "focus", words: [
+        "research middle school options", "sign up for extracurricular", "plan the school project",
+        "research summer camp options"
+      ]},
+      short: { energy: "low", words: [
+        "sign permission slip", "check school portal", "check grade portal", "pack sports bag",
+        "reply to teacher email", "coordinate carpool"
+      ]},
+      social: { energy: "social", words: [
+        "call the coach", "talk to teacher about concern", "call about the school project"
+      ]}
+    },
+    teen: {
+      long: { energy: "focus", words: [
+        "research college applications", "fill out scholarship application", "plan driving lessons schedule",
+        "research summer job options", "review report card together"
+      ]},
+      short: { energy: "low", words: [
+        "sign permission slip", "check grade portal", "check school portal", "confirm ride home",
+        "text about curfew plan"
+      ]},
+      social: { energy: "social", words: [
+        "call the school counselor", "call about college applications", "call the driving instructor"
+      ]}
+    },
+    adult: {
+      long: { energy: "focus", words: [
+        "help with apartment search", "review lease paperwork together", "research job options with them",
+        "help with resume"
+      ]},
+      short: { energy: "low", words: [
+        "check in text", "send a reminder about the appointment"
+      ]},
+      social: { energy: "social", words: [
+        "check in call", "call about the move", "call about their new job"
+      ]}
+    },
+    homeschool: {
+      long: { energy: "focus", words: [
+        "plan weekly homeschool lesson", "grade curriculum worksheets", "organize co op portfolio documentation",
+        "order next semester books", "audit state compliance logs", "prepare science experiment supplies",
+        "sort physical educational materials", "plan homeschool curriculum", "research homeschool curriculum",
+        "prep homeschool lesson plans"
+      ]},
+      short: { energy: "low", words: [
+        "print daily math worksheet", "check co op group chat", "bookmark unit study link",
+        "mark lesson box as done", "download digital reading log", "sharpen learning pencils",
+        "clear homeschool table space"
+      ]},
+      social: { energy: "social", words: [
+        "phone homeschool board coordinator", "call co op testing center", "interview local curriculum tutor"
+      ]}
+    }
+  };
+
+  // "Parent" isn't one fixed vocabulary — it's whatever stages are actually
+  // present in the kids roster (plus a homeschool bucket if any kid is
+  // homeschooled), merged fresh so a toddler and a teen under one roof both
+  // get recognized correctly.
+  function buildParentHints(kids){
+    const stagesPresent = new Set((kids || []).map(k => k.stage));
+    const anyHomeschooled = (kids || []).some(k => k.homeschooled);
+    const merged = { long: { energy: "focus", words: [] }, short: { energy: "low", words: [] }, social: { energy: "social", words: [] } };
+    const stageKeys = [...stagesPresent];
+    if(anyHomeschooled) stageKeys.push("homeschool");
+    stageKeys.forEach(stage => {
+      const hints = STAGE_TASK_HINTS[stage];
+      if(!hints) return;
+      ["long", "short", "social"].forEach(g => {
+        if(hints[g]) merged[g].words.push(...hints[g].words);
+      });
+    });
+    return merged;
+  }
+
+  function getHintsForRole(role, kids){
+    if(role === "parent") return buildParentHints(kids);
+    return ROLE_TASK_HINTS[role];
+  }
+
+  function matchRoleHint(lowerText, roles, kids){
     if(!roles || !roles.length) return null;
     const groups = [
       { key: "long", durationBucket: "45" },
@@ -1160,7 +1323,7 @@
       { key: "short", durationBucket: "5" }
     ];
     for(const role of roles){
-      const hints = ROLE_TASK_HINTS[role];
+      const hints = getHintsForRole(role, kids);
       if(!hints) continue;
       for(const g of groups){
         const bucket = hints[g.key];
@@ -1201,7 +1364,7 @@
     let roleTagged = false;
     let roleKey = null;
 
-    const roleHint = matchRoleHint(lower, roles);
+    const roleHint = matchRoleHint(lower, roles, state.kids);
     if(roleHint){
       roleTagged = true;
       roleKey = roleHint.roleKey;
@@ -1488,8 +1651,6 @@
   // Rendering
   // ===========================================================================
   const roleBadgeBtn = document.getElementById("roleBadgeBtn");
-  const roleBadgeLabel = document.getElementById("roleBadgeLabel");
-  const roleBadgeEmoji = document.getElementById("roleBadgeEmoji");
   const onboardingEl = document.getElementById("onboarding");
   const roleGrid = document.getElementById("roleGrid");
   const onboardingCancel = document.getElementById("onboardingCancel");
@@ -1506,48 +1667,61 @@
   const queueList = document.getElementById("queueList");
 
   const ROLE_META = {
-    toddler_mom: { label: "Toddler Mom", emoji: "👶" },
-    homeschool_mom: { label: "Homeschool Mom", emoji: "📚" },
-    first_time_mom: { label: "First-Time Mom", emoji: "🍼" },
     custom_sandbox: { label: "Custom", emoji: "🧩" },
     virtual_assistant: { label: "Virtual Assistant", emoji: "🗂️" },
     medical_biller: { label: "Medical Biller", emoji: "🩺" },
     content_creator: { label: "Content Creator", emoji: "🎬" },
-    executive: { label: "Executive", emoji: "💼" }
+    executive: { label: "Executive", emoji: "💼" },
+    parent: { label: "Parent", emoji: "👪" },
+    home_chore: { label: "Home & Chores", emoji: "🏠" }
+  };
+
+  const STAGE_META = {
+    baby: { label: "Baby (0–1)" },
+    toddler: { label: "Toddler (1–3)" },
+    preschool: { label: "Preschool (3–5)" },
+    big_kid: { label: "Big Kid (5–10)" },
+    tween: { label: "Tween (10–13)" },
+    teen: { label: "Teen (13–18)" },
+    adult: { label: "Grown (18+)" }
   };
 
   function updateRoleBadge(){
     const roles = state.roles && state.roles.length ? state.roles : ["virtual_assistant"];
     const metas = roles.map(r => ROLE_META[r]).filter(Boolean);
-    roleBadgeEmoji.textContent = metas.map(m => m.emoji).join("");
-    roleBadgeLabel.textContent = metas.length <= 2
+    const label = metas.length <= 2
       ? metas.map(m => m.label).join(" + ")
       : `${metas.length} profiles`;
+    roleBadgeBtn.setAttribute("aria-label", `Change role profile (currently ${label})`);
+    roleBadgeBtn.title = label;
   }
 
   const kidsRoster = document.getElementById("kidsRoster");
   const kidsList = document.getElementById("kidsList");
   const kidNameInput = document.getElementById("kidNameInput");
-  const kidGradeInput = document.getElementById("kidGradeInput");
+  const kidStageInput = document.getElementById("kidStageInput");
+  const kidHomeschoolInput = document.getElementById("kidHomeschoolInput");
 
   function updateKidsRosterVisibility(){
-    const homeschoolSelected = roleGrid.querySelector('.role-card[data-role="homeschool_mom"]').classList.contains("selected");
-    kidsRoster.hidden = !homeschoolSelected;
+    const parentSelected = roleGrid.querySelector('.role-card[data-role="parent"]').classList.contains("selected");
+    kidsRoster.hidden = !parentSelected;
   }
 
   function renderKidsList(){
     kidsList.innerHTML = "";
-    (state.homeschoolKids || []).forEach(kid => {
+    (state.kids || []).forEach(kid => {
       const row = document.createElement("div");
       row.className = "kid-row";
-      row.innerHTML = `<span>${escapeHtml(kid.name)} — ${escapeHtml(kid.grade)}</span>`;
+      const stageLabel = (STAGE_META[kid.stage] || {}).label || kid.stage;
+      const hsTag = kid.homeschooled ? " · homeschooled" : "";
+      row.innerHTML = `<span>${escapeHtml(kid.name)} — ${escapeHtml(stageLabel)}${hsTag}</span>`;
       const removeBtn = document.createElement("button");
       removeBtn.className = "kid-remove";
       removeBtn.textContent = "✕";
       removeBtn.addEventListener("click", () => {
-        state.homeschoolKids = state.homeschoolKids.filter(k => k.id !== kid.id);
+        state.kids = state.kids.filter(k => k.id !== kid.id);
         saveState();
-        remoteSaveHomeschoolKids(state.homeschoolKids);
+        remoteSaveKids(state.kids);
         renderKidsList();
       });
       row.appendChild(removeBtn);
@@ -1558,14 +1732,15 @@
   document.getElementById("kidAddBtn").addEventListener("click", () => {
     const name = kidNameInput.value.trim();
     if(!name) return;
-    if(!state.homeschoolKids) state.homeschoolKids = [];
-    state.homeschoolKids.push({
+    if(!state.kids) state.kids = [];
+    state.kids.push({
       id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "kid" + Date.now(),
-      name, grade: kidGradeInput.value
+      name, stage: kidStageInput.value, homeschooled: kidHomeschoolInput.checked
     });
     saveState();
-    remoteSaveHomeschoolKids(state.homeschoolKids);
+    remoteSaveKids(state.kids);
     kidNameInput.value = "";
+    kidHomeschoolInput.checked = false;
     renderKidsList();
   });
 
@@ -2411,7 +2586,7 @@
     try{
       const remote = await fetchRemoteState();
       if(remote.roles && remote.roles.length) state.roles = remote.roles;
-      if(remote.homeschoolKids) state.homeschoolKids = remote.homeschoolKids;
+      if(remote.kids) state.kids = remote.kids;
       if(remote.projects) state.projects = remote.projects;
       if(remote.tasks.length || state.tasks.every(t => t.source)){
         // Merge: keep any locally-created tasks the server doesn't have yet

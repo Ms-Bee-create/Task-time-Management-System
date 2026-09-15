@@ -15,16 +15,20 @@ create table if not exists public.profiles (
   email text,
   display_name text,
   -- Legacy "primary" hat, kept for the default call-script lookup.
-  -- 'mom_home' kept in the allowed list for backward-compat with any existing
-  -- rows, even though it's no longer offered in the UI (replaced by the four
-  -- more specific parenting hats below).
+  -- 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom' kept in the
+  -- allowed list for backward-compat with any existing rows, even though
+  -- they're no longer offered in the UI (replaced by one "parent" hat with a
+  -- stage-tagged kids roster, plus a separate "home_chore" hat).
   role_type text not null default 'virtual_assistant'
     check (role_type in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive',
-      'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
-  -- Multi-hat selection ("Homeschool Mom + Medical Biller" etc.) — source of
+      'parent', 'home_chore', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
+  -- Multi-hat selection ("Parent + Medical Biller" etc.) — source of
   -- truth for which role vocabularies are active. role_type mirrors roles[0].
   active_roles text[] not null default '{}',
-  -- Homeschool Mom roster: [{id, name, grade}], used for lesson planning later.
+  -- Kids roster: [{id, name, stage, homeschooled}], stage is one of
+  -- baby/toddler/preschool/big_kid/tween/teen/adult. Column name kept as
+  -- homeschool_kids for backward-compat — it now holds every kid, not just
+  -- homeschooled ones.
   homeschool_kids jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -76,7 +80,7 @@ create table if not exists public.tasks (
   -- Which active hat's vocabulary tagged this task (null = generic, no hat-specific
   -- keyword matched). Drives the category chips shown inside a time bucket.
   role_tag text
-    check (role_tag is null or role_tag in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
+    check (role_tag is null or role_tag in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'parent', 'home_chore', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
   project_id uuid references public.projects (id) on delete set null,
   status text not null default 'open'
     check (status in ('open', 'done', 'skipped')),
@@ -119,7 +123,7 @@ create table if not exists public.time_entries (
   task_id uuid references public.tasks (id) on delete set null,
   title text not null,
   role_tag text
-    check (role_tag is null or role_tag in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
+    check (role_tag is null or role_tag in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'parent', 'home_chore', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
   project_id uuid references public.projects (id) on delete set null,
   -- Snapshotted at stop time so a report/export is stable even if the project
   -- is later renamed or its rate changes.
@@ -144,7 +148,7 @@ create table if not exists public.script_templates (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   role_type text not null
-    check (role_type in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
+    check (role_type in ('virtual_assistant', 'medical_biller', 'content_creator', 'executive', 'parent', 'home_chore', 'mom_home', 'toddler_mom', 'homeschool_mom', 'first_time_mom', 'custom_sandbox')),
   body text not null,
   updated_at timestamptz not null default now(),
   unique (user_id, role_type)
@@ -229,14 +233,12 @@ begin
      E'Hi, it''s [Your Name] — thanks for hopping on.\n\nI''m calling about [reason — collab, deliverable, usage rights].\n\nHere''s what I''m thinking: [one-sentence pitch or ask].\n\nDoes that work on your end, or is there something you''d want adjusted?\n\nI''ll send a quick recap by email so it''s all in writing. Appreciate you making time.'),
     (new.id, 'executive',
      E'Hi, [Your Name] here. I have a hard stop shortly, so I''ll be brief.\n\nCalling regarding [reason for call].\n\nBottom line: [the ask or decision needed].\n\nCan we align on [next step] before I go?\n\nI''ll circulate a short recap after this call. Thanks for your time.'),
-    (new.id, 'toddler_mom',
-     E'Hi, this is [Your Name]. I''ve got about two minutes before my toddler notices I''ve disappeared, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.'),
-    (new.id, 'homeschool_mom',
-     E'Hi, this is [Your Name]. I''m between lessons, so I only have a few minutes.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — is that something you can help with?\n\nFeel free to reach me back at [best way to reach you]. Thank you!'),
-    (new.id, 'first_time_mom',
-     E'Hi, this is [Your Name]. I only have a couple minutes before the baby needs me, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.'),
     (new.id, 'custom_sandbox',
-     E'Hi, this is [Your Name]. I have a couple minutes, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nThanks so much for your time.')
+     E'Hi, this is [Your Name]. I have a couple minutes, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nThanks so much for your time.'),
+    (new.id, 'parent',
+     E'Hi, this is [Your Name]. I''ve got just a couple minutes before the kids need me, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — can you help with that today?\n\nIf you need to reach me back, [best way to reach you] is easiest. Thanks so much.'),
+    (new.id, 'home_chore',
+     E'Hi, this is [Your Name]. I have a few minutes between errands, so I''ll be quick.\n\nI''m calling about [reason for call].\n\nWhat I need is [specific ask] — is that something you can help with today?\n\nFeel free to reach me back at [best way to reach you]. Thank you!')
   on conflict (user_id, role_type) do nothing;
 
   return new;
