@@ -242,6 +242,10 @@
   .tag.energy-social{background:#f7e3e0;color:var(--terracotta-dark);}
   .tag.energy-admin{background:var(--beige);color:var(--terracotta-dark);}
   .tag.type-call{background:#e3ecf7;color:#3a5f9e;}
+  select.tag.bucket-select{
+    border:none;cursor:pointer;appearance:none;-webkit-appearance:none;
+    font-family:inherit;
+  }
   .task-card .title{
     font-size:1.25rem;font-weight:700;line-height:1.3;margin:0 0 4px;
     outline:none;
@@ -1884,9 +1888,31 @@
     tagRow.className = "tag-row";
     tagRow.innerHTML = `
       <span class="tag energy-${task.energyType}">${ENERGY_LABEL[task.energyType]}</span>
-      <span class="tag">${BUCKET_LABEL[task.durationBucket]}</span>
       ${task.taskType === "call" ? '<span class="tag type-call">📞 Call</span>' : ""}
     `;
+
+    const bucketSelect = document.createElement("select");
+    bucketSelect.className = "tag bucket-select";
+    ["5", "15", "45"].forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b;
+      opt.textContent = BUCKET_LABEL[b];
+      if(b === task.durationBucket) opt.selected = true;
+      bucketSelect.appendChild(opt);
+    });
+    bucketSelect.addEventListener("change", () => {
+      const oldBucket = task.durationBucket;
+      const newBucket = bucketSelect.value;
+      if(newBucket === oldBucket) return;
+      task.durationBucket = newBucket;
+      remoteUpdateTask(task.id, { duration_bucket: newBucket });
+      if(state.shownTaskByBucket[oldBucket] === task.id) delete state.shownTaskByBucket[oldBucket];
+      activeBucket = newBucket;
+      state.shownTaskByBucket[newBucket] = task.id;
+      saveState();
+      renderAll();
+    });
+    tagRow.insertBefore(bucketSelect, tagRow.firstChild.nextSibling);
 
     const title = document.createElement("div");
     title.className = "title";
@@ -2128,6 +2154,15 @@
   // ===========================================================================
   // Feature B: single-input brain dump
   // ===========================================================================
+  // A category chip left active from browsing an earlier bucket can silently
+  // filter a brand-new task out of the card view even though it's in the
+  // queue — force the filter back open so whatever you just added is visible.
+  function ensureTaskVisible(task){
+    if(activeBucket === task.durationBucket && activeCategory !== "all" && activeCategory !== task.roleTag){
+      activeCategory = "all";
+    }
+  }
+
   function submitDump(){
     const raw = dumpInput.value;
     const parsed = parseTaskLine(raw, state.roles);
@@ -2136,6 +2171,7 @@
     saveState();
     dumpInput.value = "";
     dumpHint.textContent = `Added "${task.title}" → ${BUCKET_LABEL[task.durationBucket]} · ${ENERGY_LABEL[task.energyType]}`;
+    ensureTaskVisible(task);
     renderAll();
     pulseBucket(task.durationBucket);
     const roleMeta = parsed.roleKey && ROLE_META[parsed.roleKey];
@@ -2178,6 +2214,7 @@
         count++;
       }
     });
+    addedTasks.forEach(ensureTaskVisible);
     saveState();
     bulkInput.value = "";
     bulkPanel.classList.remove("open");
