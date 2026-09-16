@@ -1917,6 +1917,36 @@
     });
     tagRow.insertBefore(bucketSelect, tagRow.firstChild.nextSibling);
 
+    if(state.roles && state.roles.length >= 2){
+      const categorySelect = document.createElement("select");
+      categorySelect.className = "tag bucket-select category-select";
+      const noneOpt = document.createElement("option");
+      noneOpt.value = "";
+      noneOpt.textContent = "No category";
+      if(!task.roleTag) noneOpt.selected = true;
+      categorySelect.appendChild(noneOpt);
+      state.roles.forEach(r => {
+        const meta = ROLE_META[r];
+        if(!meta) return;
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = meta.label;
+        if(r === task.roleTag) opt.selected = true;
+        categorySelect.appendChild(opt);
+      });
+      categorySelect.addEventListener("change", () => {
+        const newRole = categorySelect.value || null;
+        if(newRole === task.roleTag) return;
+        task.roleTag = newRole;
+        remoteUpdateTask(task.id, { role_tag: newRole });
+        activeCategory = newRole || "all";
+        state.shownTaskByBucket[activeBucket] = task.id;
+        saveState();
+        renderAll();
+      });
+      tagRow.insertBefore(categorySelect, bucketSelect.nextSibling);
+    }
+
     const title = document.createElement("div");
     title.className = "title";
     title.contentEditable = "true";
