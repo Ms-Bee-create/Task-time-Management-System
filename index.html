@@ -956,12 +956,7 @@
   const defaultState = {
     roles: ["virtual_assistant"],
     onboarded: false,
-    tasks: [
-      { id: "t1", title: "Call insurance re: claim #4471", durationBucket: "15", energyType: "social", taskType: "call", roleTag: "medical_biller", status: "open", priority: 1, createdAt: Date.now() - 100000 },
-      { id: "t2", title: "Reply to 3 client emails", durationBucket: "5", energyType: "admin", taskType: "email", roleTag: null, status: "open", priority: 2, createdAt: Date.now() - 90000 },
-      { id: "t3", title: "Draft next week's content outline", durationBucket: "45", energyType: "focus", taskType: "general", roleTag: "content_creator", status: "open", priority: 2, createdAt: Date.now() - 80000 },
-      { id: "t4", title: "File this week's receipts", durationBucket: "5", energyType: "low", taskType: "general", roleTag: null, status: "open", priority: 3, createdAt: Date.now() - 70000 }
-    ],
+    tasks: [],
     scriptTemplates: Object.assign({}, DEFAULT_TEMPLATES),
     shownTaskByBucket: {},
     timeEntries: [],
@@ -1012,6 +1007,13 @@
         }
         delete parsed.homeschoolKids;
         if(!parsed.roles.length) parsed.roles = ["virtual_assistant"];
+        // Migration: strip the old hardcoded demo tasks (t1-t4) shipped in a
+        // prior version's defaultState — real users should start at 0 tasks,
+        // not with sample data baked into their first localStorage cache.
+        const DEMO_TASK_IDS = new Set(["t1", "t2", "t3", "t4"]);
+        if(Array.isArray(parsed.tasks)){
+          parsed.tasks = parsed.tasks.filter(t => !DEMO_TASK_IDS.has(t.id));
+        }
         return parsed;
       }
     }catch(e){}
